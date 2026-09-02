@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Instrument+Serif:ital,wght@0,400;1,400&family=Montserrat:wght@400;500;700;800&family=Syne:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-heading: "Instrument Serif", serif;
+  --font-body: "Barlow", sans-serif;
+  --font-sans: "Barlow", sans-serif;
+  --font-syne: "Syne", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-space-grotesk: "Space Grotesk", sans-serif;
+  --radius-default: 9999px;
+  --radius-lg: 1.25rem;
+  --radius-md: 0.75rem;
+}
+
+/* Safety net: never let any element force a horizontal scrollbar */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Liquid-glass utilities from Artistic Flair theme */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass-strong {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.neumorphic-out {
+  background: #E0E5EC;
+  box-shadow: 8px 8px 16px #bcbfc4, -8px -8px 16px #ffffff;
+  border-radius: 24px;
+}
+
+.brutal-border {
+  border: 2px solid #fff;
+}
+
+.neo-brutal-btn {
+  background: #F27D26;
+  border: 4px solid #000;
+  box-shadow: 6px 6px 0px #000;
+}
+
+.experimental-border {
+  border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* Custom hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Social Fan Cards Interactive Positions */
+.fan-layout {
+  height: 29rem;
+  perspective: 1200px;
+}
+@media (max-width: 1024px) {
+  .fan-layout { height: 25rem; }
+}
+@media (max-width: 768px) {
+  .fan-layout { height: 21rem; }
+}
+@media (max-width: 640px) {
+  .fan-layout { height: 18rem; }
+}
+@media (max-width: 480px) {
+  .fan-layout { height: 14rem; }
+}
+
+.fan-card {
+  position: absolute;
+  width: 16rem;
+  height: 22rem;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+  .fan-card {
+    width: 12rem;
+    height: 16.5rem;
+    border-radius: 1rem;
+  }
+}
+@media (max-width: 768px) {
+  .fan-card {
+    width: 9.5rem;
+    height: 13rem;
+    border-radius: 0.75rem;
+  }
+}
+@media (max-width: 640px) {
+  .fan-card {
+    width: 8rem;
+    height: 11rem;
+    border-radius: 0.5rem;
+  }
+}
+@media (max-width: 480px) {
+  .fan-card {
+    width: 6.5rem;
+    height: 9rem;
+    border-radius: 0.35rem;
+  }
+}
+
