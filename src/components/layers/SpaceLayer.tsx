@@ -108,7 +108,7 @@ export function SpaceLayer() {
             Building for real clients
           </div>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 mt-2">
-            {["Arts & Cuts", "Kites Sports", "Play 365", "Titan FA"].map((name) => (
+            {["Suman Project", "Kites Sports", "Play 365", "Titan FA"].map((name) => (
               <span
                 key={name}
                 className="font-heading italic text-xl md:text-2xl text-white/40 hover:text-white/80 transition-colors select-none tracking-tight cursor-default"

@@ -13,6 +13,7 @@ export interface PortfolioProject {
   client: string;
   description: string;
   imageUrl: string;
+  thumbnailUrl?: string;
   tags: string[];
   role?: string;
   siteUrl?: string;

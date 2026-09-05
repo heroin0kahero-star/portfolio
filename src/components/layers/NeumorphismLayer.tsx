@@ -10,13 +10,13 @@ import { Sliders, Eye, Heart, Camera, Aperture, ZoomIn, Layers } from "lucide-re
 import SocialCards from "../SocialCards";
 
 const SOCIAL_FAN_CARDS_DATA = [
-  { imgUrl: "/images/projects/arts-and-cuts-salon.svg", alt: "Arts & Cuts Family Salon website", linkUrl: "" },
+  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project website", linkUrl: "https://suman-project.vercel.app/" },
   { imgUrl: "/images/projects/kites-sports-foundation.svg", alt: "Kites Sports Foundation website", linkUrl: "https://www.kitessportsfoundation.in/" },
   { imgUrl: "/images/projects/play-365-titanfa.svg", alt: "Play 365 Titan Football Academy website", linkUrl: "https://www.play365titanfa.in/" },
   { imgUrl: "/images/projects/kites-sports-foundation.svg", alt: "Kites Sports Foundation website — orange hero", linkUrl: "https://www.kitessportsfoundation.in/" },
-  { imgUrl: "/images/projects/arts-and-cuts-salon.svg", alt: "Arts & Cuts Family Salon — services page", linkUrl: "" },
+  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project — interactive interface", linkUrl: "https://suman-project.vercel.app/" },
   { imgUrl: "/images/projects/play-365-titanfa.svg", alt: "Play 365 Titan FA — fixtures & academy news", linkUrl: "https://www.play365titanfa.in/" },
-  { imgUrl: "/images/projects/arts-and-cuts-salon.svg", alt: "Arts & Cuts Family Salon — booking contact", linkUrl: "" }
+  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project — live demo", linkUrl: "https://suman-project.vercel.app/" }
 ];
 
 export function NeumorphismLayer() {
@@ -86,7 +86,7 @@ export function NeumorphismLayer() {
                   >
                     <img 
                       referrerPolicy="no-referrer"
-                      src={p.imageUrl} 
+                      src={p.thumbnailUrl ?? p.imageUrl} 
                       alt={p.title} 
                       className="h-full w-full object-cover rounded-lg"
                     />

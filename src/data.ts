@@ -5,14 +5,15 @@ export const CONTACT_EMAIL = "sumankd0000@gmail.com";
 export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   {
     id: "proj-1",
-    title: "Arts & Cuts Family Salon",
+    title: "Suman Project — Loco Bear Demo",
     category: "web",
-    year: "2025",
-    client: "Arts & Cuts Family Salon",
+    year: "2026",
+    client: "Suman Project",
     description:
-      "Business website for a family hair salon — services showcase, pricing, and easy appointment contact for local walk-ins and bookings.",
-    imageUrl: "/images/projects/arts-and-cuts-salon.svg",
-    tags: ["Web Design", "Business Site", "Services"],
+      "This site shows multi-layer designing, custom-built cursor, interactive elements and a neumorphic design style.",
+    imageUrl: "/images/projects/suman-project-preview.jpg",
+    thumbnailUrl: "/images/projects/suman-project-thumb.jpg",
+    tags: ["Web Design", "Interactive UI", "Multi-Layer"],
     role: "Web Developer",
   },
   {
