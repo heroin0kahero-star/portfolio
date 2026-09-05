@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { CONTACT_EMAIL } from "../../data";
 
-type TierId = "starter" | "growth" | "custom";
+type TierId = "landing" | "starter" | "growth" | "custom";
 type DesignLevel = "Simple" | "Standard" | "Custom" | "Premium";
 type FeatureId = "booking" | "cms" | "ecom" | "seo" | "photo" | "care";
 type DeliveryChoice = "Standard" | "Express";
@@ -25,8 +25,10 @@ const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
 interface TierConfig {
   id: TierId;
   name: string;
-  price: number;
+  rangeLow: number;
+  rangeLabel: string;
   pages: number;
+  fixedPages?: boolean;
   design: DesignLevel;
   features: FeatureId[];
   blurb: string;
@@ -35,9 +37,22 @@ interface TierConfig {
 
 const TIERS: TierConfig[] = [
   {
+    id: "landing",
+    name: "Landing Page",
+    rangeLow: 17000,
+    rangeLabel: "₹17,000 – ₹25,000",
+    pages: 1,
+    fixedPages: true,
+    design: "Standard",
+    features: [],
+    blurb: "A single high-converting page built to capture leads fast.",
+    included: ["Single page — hero + CTA", "Mobile-responsive", "Contact form", "Fast turnaround"],
+  },
+  {
     id: "starter",
     name: "Starter Site",
-    price: 35000,
+    rangeLow: 28000,
+    rangeLabel: "₹28,000 – ₹35,000",
     pages: 4,
     design: "Standard",
     features: [],
@@ -47,7 +62,8 @@ const TIERS: TierConfig[] = [
   {
     id: "growth",
     name: "Growth Site",
-    price: 55000,
+    rangeLow: 50000,
+    rangeLabel: "₹50,000 – ₹65,000",
     pages: 8,
     design: "Custom",
     features: ["booking", "cms"],
@@ -57,7 +73,8 @@ const TIERS: TierConfig[] = [
   {
     id: "custom",
     name: "Custom Build",
-    price: 90000,
+    rangeLow: 80000,
+    rangeLabel: "₹80,000 and above",
     pages: 10,
     design: "Custom",
     features: ["cms"],
@@ -145,7 +162,7 @@ export function NeoBrutalismLayer() {
       return sum;
     }, 0);
     const expressFee = delivery === "Express" ? EXPRESS_FEE : 0;
-    const oneTime = tier.price + extraPages * PAGE_FEE + designUpcharge + featureTotal + expressFee;
+    const oneTime = tier.rangeLow + extraPages * PAGE_FEE + designUpcharge + featureTotal + expressFee;
     const monthly = featuresState.care ? CARE_FEE : 0;
     return { oneTime, monthly, extraPages, designUpcharge, featureTotal, expressFee };
   };
@@ -154,7 +171,7 @@ export function NeoBrutalismLayer() {
     if (!tier) return { items: [], oneTime: 0, monthly: 0 };
     const { oneTime, monthly, extraPages, designUpcharge, featureTotal, expressFee } = calc();
     const items: { text: string; recurring?: boolean }[] = [
-      { text: `${tier.name.toUpperCase()} BASE — ${inr(tier.price)}` },
+      { text: `${tier.name.toUpperCase()} BASE — ${inr(tier.rangeLow)} (EST.)` },
     ];
     if (extraPages > 0) {
       items.push({ text: `${pagesStep} PAGES (+${extraPages} BEYOND ${tier.pages}) — ${inr(extraPages * PAGE_FEE)}` });
@@ -206,14 +223,16 @@ export function NeoBrutalismLayer() {
       ``,
       `I'd like to discuss a project.`,
       ``,
-      `Package: ${tier.name} (₹${tier.price.toLocaleString("en-IN")})`,
+      `Package: ${tier.name} (est. ${tier.rangeLabel})`,
       `Industry vertical: ${industry}`,
-      `Number of pages: ${pagesStep} (${tier.pages} included with ${tier.name})`,
+      tier.fixedPages
+        ? `Number of pages: 1 (fixed single-page scope)`
+        : `Number of pages: ${pagesStep} (${tier.pages} included with ${tier.name})`,
       `Design complexity: ${design}`,
-      `Delivery: ${delivery === "Express" ? `Express (${COUNT_DOWN_EXPRESS}, +${inr(EXPRESS_FEE)})` : `Standard (${COUNT_DOWN_STANDARD}, included)`}`,
-      `Features: ${selectedFeatures.length ? selectedFeatures.map((id) => `${FEATURES[id].label}${tier.features.includes(id) ? " (included)" : ` (+${inr(FEATURES[id].fee)}${FEATURES[id].recurring ? "/month" : ""})`}`).join("; ") : "None selected"}`,
+      `Delivery: ${delivery === "Express" ? `Express (${COUNT_DOWN_EXPRESS}, +${inr(EXPRESS_FEE)} est.)` : `Standard (${COUNT_DOWN_STANDARD}, included)`}`,
+      `Features: ${selectedFeatures.length ? selectedFeatures.map((id) => `${FEATURES[id].label}${tier.features.includes(id) ? " (included)" : ` (+${inr(FEATURES[id].fee)}${FEATURES[id].recurring ? "/month" : ""} est.)`}`).join("; ") : "None selected"}`,
     ];
-    return base.join("\n") + `\n\nEstimated one-time budget: ${inr(oneTime)}` + (monthly > 0 ? `\nRecurring: ${inr(monthly)}/month` : "") + `\n\nPlease reach back to me at:`;
+    return base.join("\n") + `\n\nEstimated one-time budget: ${inr(oneTime)}` + (monthly > 0 ? `\nRecurring: ${inr(monthly)}/month` : "") + `\n\nAll figures are estimates — final quote confirmed after a quick scope call.` + `\n\nPlease reach back to me at:`;
   };
 
   return (
@@ -238,7 +257,7 @@ export function NeoBrutalismLayer() {
             WORK TOGETHER
           </h2>
           <p className="text-xl md:text-2xl font-bold font-mono tracking-tight mt-2 bg-yellow-300 border-2 border-black p-3 inline-block shadow-[3px_3px_0px_#000]">
-            Pick a Package or Customize in Real-Time — Pricing in INR ₹!
+            Pick a Package or Customize in Real-Time — Transparent INR Estimates!
           </p>
         </div>
 
@@ -247,7 +266,7 @@ export function NeoBrutalismLayer() {
           <div className="inline-block border-4 border-black bg-black text-white px-4 py-1.5 font-black text-xs uppercase shadow-[4px_4px_0px_rgba(0,0,0,0.35)] mb-5">
             Step 1 — Pick Your Package
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
             {TIERS.map((t) => {
               const active = selectedTier === t.id;
               return (
@@ -269,8 +288,13 @@ export function NeoBrutalismLayer() {
                   <p className="text-xs text-neutral-600 mt-3 leading-snug font-body">{t.blurb}</p>
 
                   <div className="mt-4 font-mono">
-                    <span className="text-5xl font-black tracking-tighter">{inr(t.price)}</span>
-                    <span className="text-sm font-bold text-neutral-500 block mt-1">ONE-TIME PROJECT FEE</span>
+                    <span className="text-[10px] font-black uppercase text-neutral-500 block">
+                      Estimated Range
+                    </span>
+                    <span className="text-3xl md:text-4xl font-black tracking-tighter block mt-1">
+                      {t.rangeLabel}
+                    </span>
+                    <span className="text-sm font-bold text-neutral-500 block mt-1">ONE-TIME PROJECT ESTIMATE</span>
                   </div>
 
                   <ul className="mt-5 flex flex-col gap-2 text-xs font-bold uppercase font-mono flex-1">
@@ -332,9 +356,9 @@ export function NeoBrutalismLayer() {
 
               {/* Baseline banner */}
               <div className="border-4 border-black bg-yellow-300 px-4 py-3 mb-6 font-mono text-xs font-black uppercase flex flex-wrap items-center justify-between gap-2">
-                <span>Baseline: {tier.name} — Base {inr(tier.price)}</span>
+                <span>Baseline: {tier.name} — from {inr(tier.rangeLow)}</span>
                 <span className="text-neutral-600">
-                  {tier.pages} pages · {tier.design} design · {tier.features.length} feature{tier.features.length === 1 ? "" : "s"} included
+                  {tier.fixedPages ? "1 page" : `${tier.pages} pages`} · {tier.design} design · {tier.features.length} feature{tier.features.length === 1 ? "" : "s"} included
                 </span>
               </div>
 
@@ -363,33 +387,49 @@ export function NeoBrutalismLayer() {
                   </div>
                 </div>
 
-                {/* Number of pages slider */}
-                <div className="border-4 border-black p-5 bg-orange-100">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                      📄 Number of Pages
-                    </span>
-                    <span className="h-8 min-w-14 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
-                      {pagesStep}
-                    </span>
+                {/* Number of pages — hidden/disabled for fixed single-page Landing tier */}
+                {tier.fixedPages ? (
+                  <div className="border-4 border-black p-5 bg-orange-100">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-bold uppercase tracking-wider font-mono">
+                        📄 Number of Pages
+                      </span>
+                      <span className="h-8 min-w-14 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
+                        {pagesStep}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-mono font-bold uppercase text-neutral-600 mt-3">
+                      Fixed single-page scope — not applicable to {tier.name}.
+                    </p>
                   </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={20}
-                    step={1}
-                    value={pagesStep}
-                    onChange={(e) => setPagesStep(parseInt(e.target.value))}
-                    className="w-full cursor-pointer accent-[#F27D26]"
-                  />
-                  <div className="flex justify-between text-[10px] font-mono font-bold uppercase text-neutral-600 mt-1">
-                    <span>1 Page</span>
-                    <span>20 Pages</span>
+                ) : (
+                  <div className="border-4 border-black p-5 bg-orange-100">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider font-mono">
+                        📄 Number of Pages
+                      </span>
+                      <span className="h-8 min-w-14 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
+                        {pagesStep}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={20}
+                      step={1}
+                      value={pagesStep}
+                      onChange={(e) => setPagesStep(parseInt(e.target.value))}
+                      className="w-full cursor-pointer accent-[#F27D26]"
+                    />
+                    <div className="flex justify-between text-[10px] font-mono font-bold uppercase text-neutral-600 mt-1">
+                      <span>1 Page</span>
+                      <span>20 Pages</span>
+                    </div>
+                    <p className="text-[10px] font-mono font-bold uppercase text-neutral-600 mt-2">
+                      {tier.pages} pages included · +{inr(PAGE_FEE)}/page beyond that (est.)
+                    </p>
                   </div>
-                  <p className="text-[10px] font-mono font-bold uppercase text-neutral-600 mt-2">
-                    {tier.pages} pages included · +{inr(PAGE_FEE)}/page beyond that
-                  </p>
-                </div>
+                )}
 
                 {/* Design complexity slider */}
                 <div className="border-4 border-black p-5 bg-white">
@@ -424,7 +464,7 @@ export function NeoBrutalismLayer() {
                         >
                           {level}
                           <span className="block font-mono font-bold mt-0.5">
-                            {upcharge ? `+${inr(upcharge)}` : "included"}
+                            {upcharge ? `+${inr(upcharge)} est.` : "included"}
                           </span>
                         </button>
                       );
@@ -460,7 +500,7 @@ export function NeoBrutalismLayer() {
                           <div>
                             <h4 className="text-sm font-black uppercase leading-tight">{cfg.label}</h4>
                             <p className="text-[10px] text-neutral-600 mt-1 font-mono font-bold uppercase">
-                              {cfg.recurring ? `${inr(cfg.fee)}/month recurring` : `+ ${inr(cfg.fee)}`}
+                              {cfg.recurring ? `${inr(cfg.fee)}/month · est.` : `+ ${inr(cfg.fee)} est.`}
                               {included ? " · included in package" : ""}
                             </p>
                           </div>
@@ -481,7 +521,7 @@ export function NeoBrutalismLayer() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                       { id: "Standard" as DeliveryChoice, label: "Standard Priority Delivery", days: COUNT_DOWN_STANDARD, feeNote: "Included" },
-                      { id: "Express" as DeliveryChoice, label: "Express First Class", days: COUNT_DOWN_EXPRESS, feeNote: `+${inr(EXPRESS_FEE)}` },
+                      { id: "Express" as DeliveryChoice, label: "Express First Class", days: COUNT_DOWN_EXPRESS, feeNote: `+${inr(EXPRESS_FEE)} est.` },
                     ].map((opt) => {
                       const active = delivery === opt.id;
                       return (
@@ -514,12 +554,15 @@ export function NeoBrutalismLayer() {
                   [LIVE ESTIMATE OVERVIEW]
                 </span>
                 
-                <div className="flex justify-between items-baseline border-b-4 border-black pb-4 mb-4">
-                  <span className="text-lg font-black uppercase">Total Projected</span>
+                <div className="flex justify-between items-baseline border-b-4 border-black pb-4 mb-2">
+                  <span className="text-lg font-black uppercase">Estimated Total</span>
                   <span className="text-3xl md:text-5xl font-black font-sans bg-white border-2 border-black px-3 py-1 shadow-[2px_2px_0px_#000]">
                     {inr(oneTime)}
                   </span>
                 </div>
+                <p className="text-[10px] font-mono font-bold uppercase text-neutral-700 mb-4">
+                  ⚠ This is an estimate — final quote confirmed after a quick scope call.
+                </p>
 
                 {/* Breakdown */}
                 <ul className="text-xs font-mono flex flex-col gap-2 bg-white/60 p-4 border-2 border-black text-left mb-4 font-semibold">
@@ -532,11 +575,11 @@ export function NeoBrutalismLayer() {
                     </li>
                   ))}
                   <li className="text-sm font-black border-t-2 border-black pt-2 mt-1">
-                    TOTAL (ONE-TIME): {inr(oneTime)}
+                    EST. TOTAL (ONE-TIME): {inr(oneTime)}
                   </li>
                   {monthly > 0 && (
                     <li className="text-pink-600 font-black">
-                      RECURRING: {inr(monthly)}/month — keep the site maintained
+                      RECURRING (EST.): {inr(monthly)}/month — keep the site maintained
                     </li>
                   )}
                   <li className="text-neutral-600 font-bold">
@@ -546,7 +589,7 @@ export function NeoBrutalismLayer() {
 
                 {isSubmitted ? (
                   <div className="bg-lime-400 border-4 border-black p-4 font-black uppercase text-center text-sm shadow-[4px_4px_0px_#000] my-2 animate-bounce">
-                    🎉 SPECIFICATION SUBMITTED! BUDGET: {inr(oneTime)}{monthly > 0 ? ` + ${inr(monthly)}/month` : ""}
+                    🎉 SPECIFICATION SUBMITTED! EST. BUDGET: {inr(oneTime)}{monthly > 0 ? ` + ${inr(monthly)}/month` : ""}
                   </div>
                 ) : (
                   <button
