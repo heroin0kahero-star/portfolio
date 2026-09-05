@@ -10,13 +10,13 @@ import { Sliders, Eye, Heart, Camera, Aperture, ZoomIn, Layers } from "lucide-re
 import SocialCards from "../SocialCards";
 
 const SOCIAL_FAN_CARDS_DATA = [
-  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project website", linkUrl: "https://suman-project.vercel.app/" },
-  { imgUrl: "/images/projects/kites-sports-foundation.svg", alt: "Kites Sports Foundation website", linkUrl: "https://www.kitessportsfoundation.in/" },
-  { imgUrl: "/images/projects/play-365-titanfa.svg", alt: "Play 365 Titan Football Academy website", linkUrl: "https://www.play365titanfa.in/" },
-  { imgUrl: "/images/projects/kites-sports-foundation.svg", alt: "Kites Sports Foundation website — orange hero", linkUrl: "https://www.kitessportsfoundation.in/" },
-  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project — interactive interface", linkUrl: "https://suman-project.vercel.app/" },
-  { imgUrl: "/images/projects/play-365-titanfa.svg", alt: "Play 365 Titan FA — fixtures & academy news", linkUrl: "https://www.play365titanfa.in/" },
-  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project — live demo", linkUrl: "https://suman-project.vercel.app/" }
+  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project website preview", linkUrl: "https://suman-project.vercel.app/" },
+  { imgUrl: "/images/projects/kites-sports-foundation-card.jpg", alt: "Kites Sports Foundation website preview", linkUrl: "https://www.kitessportsfoundation.in/" },
+  { imgUrl: "/images/projects/play-365-titanfa-card.jpg", alt: "Play 365 Titan Football Academy website preview", linkUrl: "https://www.play365titanfa.in/" },
+  { imgUrl: "/images/projects/kites-sports-foundation-card.jpg", alt: "Kites Sports Foundation website view", linkUrl: "https://www.kitessportsfoundation.in/" },
+  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project interface view", linkUrl: "https://suman-project.vercel.app/" },
+  { imgUrl: "/images/projects/play-365-titanfa-card.jpg", alt: "Play 365 Titan FA academy site view", linkUrl: "https://www.play365titanfa.in/" },
+  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project live demo view", linkUrl: "https://suman-project.vercel.app/" }
 ];
 
 export function NeumorphismLayer() {
@@ -86,8 +86,9 @@ export function NeumorphismLayer() {
                   >
                     <img 
                       referrerPolicy="no-referrer"
+                      loading="lazy"
                       src={p.thumbnailUrl ?? p.imageUrl} 
-                      alt={p.title} 
+                      alt={`${p.title} — website preview thumbnail`}
                       className="h-full w-full object-cover rounded-lg"
                     />
                   </div>
@@ -153,8 +154,9 @@ export function NeumorphismLayer() {
                 <div className="w-full h-[320px] md:h-[400px] rounded-xl overflow-hidden relative shadow-inner">
                   <img
                     referrerPolicy="no-referrer"
+                    loading="lazy"
                     src={selectedProj.imageUrl}
-                    alt={selectedProj.title}
+                    alt={`${selectedProj.title} — active master preview`}
                     style={{
                       filter: `brightness(${brightness}%) contrast(${contrast}%) grayscale(${grayscale}%)`,
                       transition: "filter 0.15s ease"

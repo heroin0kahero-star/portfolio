@@ -124,8 +124,9 @@ export function BrutalismLayer() {
                 {hoverIndex !== null ? (
                   <img
                     referrerPolicy="no-referrer"
+                    loading="lazy"
                     src={webProjects[hoverIndex].imageUrl}
-                    alt={webProjects[hoverIndex].title}
+                    alt={`${webProjects[hoverIndex].title} — website screenshot`}
                     className="w-full h-full object-cover transition-transform duration-300 scale-105 filter saturate-150 contrast-125 brightness-95"
                   />
                 ) : (

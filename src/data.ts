@@ -24,7 +24,8 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     client: "Kites Sports Foundation",
     description:
       "Informational website for a sports foundation — programmes, events, and community outreach presented in a bold, high-energy layout.",
-    imageUrl: "/images/projects/kites-sports-foundation.svg",
+    imageUrl: "/images/projects/kites-sports-foundation-preview.jpg",
+    thumbnailUrl: "/images/projects/kites-sports-foundation-thumb.jpg",
     tags: ["Web Development", "Sports", "Non-Profit Web"],
     role: "Web Developer",
     siteUrl: "https://www.kitessportsfoundation.in/",
@@ -37,7 +38,8 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     client: "Play 365",
     description:
       "Web portal for Play 365 Titan Football Academy — academy news, fixtures, and a talent showcase built to put the academy on the map.",
-    imageUrl: "/images/projects/play-365-titanfa.svg",
+    imageUrl: "/images/projects/play-365-titanfa-preview.jpg",
+    thumbnailUrl: "/images/projects/play-365-titanfa-thumb.jpg",
     tags: ["Web Development", "Football", "Academy Portal"],
     role: "Web Developer",
     siteUrl: "https://www.play365titanfa.in/",

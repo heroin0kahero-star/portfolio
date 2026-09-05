@@ -107,8 +107,9 @@ export function AwwwardsLayer() {
               <div className="w-full h-full bg-neutral-900 relative overflow-hidden flex items-center justify-center">
                 <img
                   referrerPolicy="no-referrer"
+                  loading="lazy"
                   src={currentProj.imageUrl}
-                  alt={currentProj.title}
+                  alt={`${currentProj.title} — website screenshot`}
                   className="w-full h-full object-cover select-none pointer-events-none scale-100 group-hover:scale-105 transition-all duration-[800ms] filter grayscale select-none"
                 />
                 
