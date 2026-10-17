@@ -37,6 +37,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { LayerFallback } from "./components/LayerFallback";
 import ContactSection from "./components/ContactSection";
 import { MotionFooter } from "./components/MotionFooter";
+import { TimelineAnimation } from "./components/TimelineAnimation";
 
 import {
   Orbit,
@@ -198,6 +199,9 @@ export default function App() {
           </CustomBrutalistCursor>
         </SectionBoundary>
       </div>
+
+      {/* PROCESS: TIMELINE */}
+      <TimelineAnimation />
 
       {/* LAYER 4: PLAYFUL NEO-BRUTALIST */}
       <div id="playful" className="relative">
