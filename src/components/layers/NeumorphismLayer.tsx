@@ -10,13 +10,13 @@ import { Sliders, Eye, Heart, Camera, Aperture, ZoomIn, Layers } from "lucide-re
 import SocialCards from "../SocialCards";
 
 const SOCIAL_FAN_CARDS_DATA = [
-  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project website preview", linkUrl: "https://suman-project.vercel.app/" },
+  { imgUrl: "https://placehold.co/400x400/e2e8e0/5b6b5a?text=Zenvora+Aesthetics", alt: "Zenvora Aesthetics website preview", linkUrl: "https://www.zenvoraaesthetics.in/" },
   { imgUrl: "/images/projects/kites-sports-foundation-card.jpg", alt: "Kites Sports Foundation website preview", linkUrl: "https://www.kitessportsfoundation.in/" },
   { imgUrl: "/images/projects/play-365-titanfa-card.jpg", alt: "Play 365 Titan Football Academy website preview", linkUrl: "https://www.play365titanfa.in/" },
   { imgUrl: "/images/projects/kites-sports-foundation-card.jpg", alt: "Kites Sports Foundation website view", linkUrl: "https://www.kitessportsfoundation.in/" },
-  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project interface view", linkUrl: "https://suman-project.vercel.app/" },
+  { imgUrl: "https://placehold.co/400x400/e2e8e0/5b6b5a?text=Zenvora+Aesthetics", alt: "Zenvora Aesthetics interface view", linkUrl: "https://www.zenvoraaesthetics.in/" },
   { imgUrl: "/images/projects/play-365-titanfa-card.jpg", alt: "Play 365 Titan FA academy site view", linkUrl: "https://www.play365titanfa.in/" },
-  { imgUrl: "/images/projects/suman-project-card.jpg", alt: "Suman Project live demo view", linkUrl: "https://suman-project.vercel.app/" }
+  { imgUrl: "https://placehold.co/400x400/e2e8e0/5b6b5a?text=Zenvora+Aesthetics", alt: "Zenvora Aesthetics live demo view", linkUrl: "https://www.zenvoraaesthetics.in/" }
 ];
 
 export function NeumorphismLayer() {

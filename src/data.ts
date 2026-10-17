@@ -5,16 +5,17 @@ export const CONTACT_EMAIL = "sumankd0000@gmail.com";
 export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   {
     id: "proj-1",
-    title: "Suman Project — Loco Bear Demo",
+    title: "Zenvora Aesthetics — Skin, Hair & Fat-Loss Clinic",
     category: "web",
     year: "2026",
-    client: "Suman Project",
+    client: "Zenvora Aesthetics",
     description:
-      "This site shows multi-layer designing, custom-built cursor, interactive elements and a neumorphic design style.",
-    imageUrl: "/images/projects/suman-project-preview.jpg",
-    thumbnailUrl: "/images/projects/suman-project-thumb.jpg",
-    tags: ["Web Design", "Interactive UI", "Multi-Layer"],
-    role: "Web Developer",
+      "A premium aesthetic clinic website I designed and built — clean, soft-neutral skincare and clinic visuals for Zenvora Aesthetics in Indiranagar.",
+    imageUrl: "https://placehold.co/800x800/e2e8e0/5b6b5a?text=Zenvora+Aesthetics",
+    thumbnailUrl: "https://placehold.co/400x400/e2e8e0/5b6b5a?text=Zenvora",
+    tags: ["Aesthetic Clinic", "Skincare", "Web Design"],
+    role: "Web Developer & Designer",
+    siteUrl: "https://www.zenvoraaesthetics.in/",
   },
   {
     id: "proj-2",

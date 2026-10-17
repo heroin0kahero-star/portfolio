@@ -25,7 +25,7 @@ export default function LoadingScreen({
   onComplete,
   tips = DEFAULT_TIPS,
   tipInterval = 2800,
-  autoProgressDuration = 3800,
+  autoProgressDuration = 1500,
 }: LoadingScreenProps) {
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [showCursor, setShowCursor] = useState(true);
@@ -50,8 +50,8 @@ export default function LoadingScreen({
           setIsFading(true);
           setTimeout(() => {
             if (onComplete) onComplete();
-          }, 800); // fade transition time
-        }, 500);
+          }, 300); // fade transition time
+        }, 200);
       } else {
         // Curve the progress to make it feel natural (ease-out style)
         const easeRatio = 1 - Math.pow(1 - calculatedRatio, 2);
@@ -81,7 +81,7 @@ export default function LoadingScreen({
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-black text-white flex flex-col items-center justify-center px-6 select-none transition-all duration-[800ms] cubic-bezier(0.16, 1, 0.3, 1) ${
+      className={`fixed inset-0 z-[9999] bg-black text-white flex flex-col items-center justify-center px-6 select-none transition-all duration-[300ms] cubic-bezier(0.16, 1, 0.3, 1) ${
         isFading ? "opacity-0 pointer-events-none scale-102 blur-md" : "opacity-100 pointer-events-auto"
       }`}
     >
