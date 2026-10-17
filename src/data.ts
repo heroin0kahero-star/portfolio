@@ -1,66 +1,85 @@
 import { PortfolioProject } from "./types";
 
 export const CONTACT_EMAIL = "sumankd0000@gmail.com";
+export const WHATSAPP_NUMBER = "8792009091";
+export const WHATSAPP_MESSAGE =
+  "Hi Suman, I saw your portfolio and I'd like a website for my business";
+export const CITY = "Bangalore";
 
 export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   {
-    id: "proj-1",
-    title: "Zenvora Aesthetics — Skin, Hair & Fat-Loss Clinic",
+    id: "proj-zenvora",
+    title: "Zenvora Aesthetics",
     category: "web",
     year: "2026",
     client: "Zenvora Aesthetics",
     description:
-      "A premium aesthetic clinic website I designed and built — clean, soft-neutral skincare and clinic visuals for Zenvora Aesthetics in Indiranagar.",
+      "A premium aesthetic clinic website for skin, hair, and fat-loss treatments in Bangalore.",
     videoUrl: "/images/projects/imeags/zenvora-clinic.mp4",
-    tags: ["Aesthetic Clinic", "Skincare", "Web Design"],
+    tags: ["Clinic", "Skincare", "Web Design"],
     role: "Web Developer & Designer",
     siteUrl: "https://www.zenvoraaesthetics.in/",
     caseStudy: {
       clientNeeded:
-        "A premium, trustworthy online presence for an aesthetic clinic offering skin, hair, and fat-loss treatments.",
+        "A clean, trustworthy online presence for an aesthetic clinic offering skin, hair, and fat-loss treatments.",
       whatIBuilt:
-        "A clean, soft-neutral clinic website with service pages, booking inquiry, and mobile-responsive design.",
-      result: "TODO(result): add conversion or inquiry metric",
+        "A soft-neutral clinic website with service pages, booking inquiry, and a mobile-responsive layout.",
+      tools: ["React", "Vite", "Tailwind CSS"],
+      screenshots: {
+        desktop: "/images/projects/zenvora-desktop.jpg", // TODO: add screenshot
+        phone: "/images/projects/zenvora-phone.jpg", // TODO: add screenshot
+      },
+      result: "TODO(result): add truthful metric if available",
     },
   },
   {
-    id: "proj-2",
+    id: "proj-kites",
     title: "Kites Sports Foundation",
     category: "web",
     year: "2025",
     client: "Kites Sports Foundation",
     description:
-      "Informational website for a sports foundation — programmes, events, and community outreach presented in a bold, high-energy layout.",
+      "An informational website for a sports foundation — programmes, events, and community outreach.",
     videoUrl: "/images/projects/imeags/kites-sports-foundation.mp4",
-    tags: ["Web Development", "Sports", "Non-Profit Web"],
+    tags: ["Sports Foundation", "Non-Profit", "Web Development"],
     role: "Web Developer",
     siteUrl: "https://www.kitessportsfoundation.in/",
     caseStudy: {
       clientNeeded:
-        "A bold, high-energy website to showcase programmes, events, and community outreach for a cricket and football arena.",
+        "A bold website to present programmes, events, and community outreach for a cricket and football arena.",
       whatIBuilt:
-        "An informational sports foundation site with event listings, programme details, and community outreach sections.",
-      result: "TODO(result): add registration or traffic metric",
+        "A high-energy informational site with event listings, programme details, and outreach sections.",
+      tools: ["React", "Vite", "Tailwind CSS"],
+      screenshots: {
+        desktop: "/images/projects/kites-desktop.jpg", // TODO: add screenshot
+        phone: "/images/projects/kites-phone.jpg", // TODO: add screenshot
+      },
+      result: "TODO(result): add truthful metric if available",
     },
   },
   {
-    id: "proj-3",
+    id: "proj-titan",
     title: "Play 365 Titan FA",
     category: "web",
     year: "2025",
-    client: "Play 365",
+    client: "Play 365 Titan FA",
     description:
-      "Web portal for Play 365 Titan Football Academy — academy news, fixtures, and a talent showcase built to put the academy on the map.",
+      "A web portal for a football academy — academy news, fixtures, and a talent showcase.",
     videoUrl: "/images/projects/imeags/titan-football-academy.mp4",
-    tags: ["Web Development", "Football", "Academy Portal"],
+    tags: ["Football Academy", "Portal", "Web Development"],
     role: "Web Developer",
     siteUrl: "https://www.play365titanfa.in/",
     caseStudy: {
       clientNeeded:
-        "A web portal for a football academy to publish news, fixtures, and showcase player talent.",
+        "A portal for a football academy to publish news, fixtures, and showcase player talent.",
       whatIBuilt:
-        "A football academy portal with news blog, fixture listings, and a talent showcase for players.",
-      result: "TODO(result): add signup or engagement metric",
+        "A football academy portal with a news blog, fixture listings, and a player talent showcase.",
+      tools: ["React", "Vite", "Tailwind CSS"],
+      screenshots: {
+        desktop: "/images/projects/titan-desktop.jpg", // TODO: add screenshot
+        phone: "/images/projects/titan-phone.jpg", // TODO: add screenshot
+      },
+      result: "TODO(result): add truthful metric if available",
     },
   },
 ];

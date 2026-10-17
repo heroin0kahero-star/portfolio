@@ -1,6 +1,5 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * @license SPDX-License-Identifier: Apache-2.0
  */
 
 import { CSSProperties } from "react";
@@ -8,20 +7,23 @@ import { CSSProperties } from "react";
 export interface PortfolioProject {
   id: string;
   title: string;
-  category: "graphic" | "photography" | "3d" | "web" | "all";
+  category: "web";
   year: string;
   client: string;
   description: string;
-  imageUrl?: string;
-  thumbnailUrl?: string;
   videoUrl?: string;
   tags: string[];
   role?: string;
   siteUrl?: string;
-  caseStudy?: {
+  caseStudy: {
     clientNeeded: string;
     whatIBuilt: string;
-    result?: string; // TODO(result): fill in concrete metric
+    tools: string[];
+    screenshots: {
+      desktop?: string; // TODO: add /images/projects/<slug>-desktop.jpg
+      phone?: string;   // TODO: add /images/projects/<slug>-phone.jpg
+    };
+    result?: string; // TODO(result): only fill if truthful, never invent
   };
 }
 
