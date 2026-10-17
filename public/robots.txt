@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: {{PRODUCTION_DOMAIN}}/sitemap.xml
+Sitemap: https://portfolio-ten-swart-4ep6xufxfi.vercel.app/sitemap.xml
