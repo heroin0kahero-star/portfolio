@@ -1,9 +1,10 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Check } from "lucide-react";
 
 export function AboutSection() {
+  const reduced = useReducedMotion();
   return (
     <section
       id="about"
@@ -24,8 +25,12 @@ export function AboutSection() {
           </div>
 
           <motion.div
-            whileInView={{ opacity: [0, 1], y: [20, 0] }}
-            initial={{ opacity: 0, y: 20 }}
+            whileInView={
+              reduced
+                ? {}
+                : { opacity: [0, 1], y: [20, 0], transition: { duration: 0.5 } }
+            }
+            initial={reduced ? {} : { opacity: 0, y: 20 }}
             viewport={{ once: true }}
             className="rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-6 md:p-8 shadow-[2px_2px_0px_rgba(0,0,0,0.2)]"
           >

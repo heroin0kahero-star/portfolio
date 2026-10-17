@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { PortfolioProject } from "../../types";
@@ -130,6 +130,7 @@ export function CaseCard({ project }: CaseCardProps) {
 }
 
 export function WorkSection({ projects }: { projects: PortfolioProject[] }) {
+  const reduced = useReducedMotion();
   return (
     <section
       id="work"
@@ -149,12 +150,21 @@ export function WorkSection({ projects }: { projects: PortfolioProject[] }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {projects.map((project) => (
+          {projects.map((project, index) => (
             <motion.div
               key={project.id}
-              whileInView={{ y: [20, 0], opacity: [0, 1] }}
-              initial={{ y: 20, opacity: 0 }}
+              whileInView={
+                reduced
+                  ? {}
+                  : {
+                      y: [20, 0],
+                      opacity: [0, 1],
+                      transition: { duration: 0.5 },
+                    }
+              }
+              initial={reduced ? {} : { y: 20, opacity: 0 }}
               viewport={{ once: true }}
+              style={{ animationDelay: reduced ? "0ms" : `${index * 100}ms` }}
               className="group"
             >
               <CaseCard project={project} />
