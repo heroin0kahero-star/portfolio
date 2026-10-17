@@ -36,6 +36,7 @@ import { MagneticText } from "./components/MagneticText";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { LayerFallback } from "./components/LayerFallback";
 import ContactSection from "./components/ContactSection";
+import { MotionFooter } from "./components/MotionFooter";
 
 import {
   Orbit,
@@ -230,6 +231,9 @@ export default function App() {
 
       {/* ABOUT + CONTACT */}
       <ContactSection />
+
+      {/* FOOTER */}
+      <MotionFooter />
 
     </main>
   );

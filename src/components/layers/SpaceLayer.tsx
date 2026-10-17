@@ -7,6 +7,9 @@ import React from "react";
 import { motion, type Variants } from "motion/react";
 import { FadingVideo } from "../FadingVideo";
 import { BlurText } from "../BlurText";
+import { TextRotate } from "../TextRotate";
+import { BentoGrid } from "../BentoGrid";
+import { TestimonialsMarquee } from "../TestimonialsMarquee";
 
 // Built-in SVG ArrowUpRight icon
 function ArrowUpRightIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -90,6 +93,11 @@ export function SpaceLayer() {
               text="SUMAN" 
               className="text-[clamp(2.5rem,13vw,5.5rem)] md:text-[11rem] lg:text-[14rem] font-syne font-extrabold text-white leading-[0.9] max-w-full tracking-normal text-center uppercase drop-shadow-[0_0_60px_rgba(255,255,255,0.3)] select-all w-full break-words"
             />
+            <TextRotate
+              words={["clinics", "salons", "academies", "clubs", "local businesses"]}
+              prefix="I build websites for"
+              className="mt-8"
+            />
           </div>
 
 
@@ -118,6 +126,9 @@ export function SpaceLayer() {
             ))}
           </div>
         </motion.div>
+
+        {/* Social Proof Marquee */}
+        <TestimonialsMarquee />
       </div>
 
       {/* SECTION 2: CAPABILITIES VIEW */}
@@ -147,91 +158,8 @@ export function SpaceLayer() {
           </div>
 
           {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 w-full">
-            
-            {/* Card 1: AI Scenery */}
-            <div className="liquid-glass border border-white/5 rounded-[1.25rem] p-6 lg:p-8 min-h-[360px] flex flex-col justify-between group hover:border-white/20 transition-all shadow-lg">
-              <div className="flex items-start justify-between gap-4">
-                {/* Nested 44x44 liquid-glass square */}
-                <div className="h-11 w-11 rounded-[0.75rem] border border-white/10 bg-white/5 flex items-center justify-center text-white">
-                  {/* AI Scenery Image Path Icon */}
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                    <path d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21H5Zm1-4h12l-3.75-5-3 4L9 13l-3 4Z" />
-                  </svg>
-                </div>
-                {/* Right compact flow tag display */}
-                <div className="flex flex-wrap justify-end gap-1 max-w-[70%]">
-                  {["Fluid Layout", "Mobile First", "Flex Grid"].map((tag) => (
-                    <span key={tag} className="text-[9px] font-body text-white/50 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-12 text-left">
-                <h3 className="font-heading italic text-white text-3xl md:text-4xl tracking-[-1px] leading-none mb-3">
-                  Responsive Interfaces
-                </h3>
-                <p className="text-sm text-white/70 font-body font-light leading-snug max-w-[32ch]">
-                  Every build adapts fluidly from pocket-sized phones to ultra-wide cinema screens without losing an ounce of intent.
-                </p>
-              </div>
-            </div>
-
-            {/* Card 2: Batch Production */}
-            <div className="liquid-glass border border-white/5 rounded-[1.25rem] p-6 lg:p-8 min-h-[360px] flex flex-col justify-between group hover:border-white/20 transition-all shadow-lg">
-              <div className="flex items-start justify-between gap-4">
-                <div className="h-11 w-11 rounded-[0.75rem] border border-white/10 bg-white/5 flex items-center justify-center text-white">
-                  {/* Batch Production Movie Icon */}
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                    <path d="M4 6.47 5.76 10H20v8H4V6.47M22 4h-4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.89-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4Z" />
-                  </svg>
-                </div>
-                <div className="flex flex-wrap justify-end gap-1 max-w-[70%]">
-                  {["Component Driven", "Performance", "Clean Code"].map((tag) => (
-                    <span key={tag} className="text-[9px] font-body text-white/50 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-12 text-left">
-                <h3 className="font-heading italic text-white text-3xl md:text-4xl tracking-[-1px] leading-none mb-3">
-                  Fast, Clean Code
-                </h3>
-                <p className="text-sm text-white/70 font-body font-light leading-snug max-w-[32ch]">
-                  Component-driven development ships quickly and keeps a consistent, maintainable codebase for every future page.
-                </p>
-              </div>
-            </div>
-
-            {/* Card 3: Smart Lighting */}
-            <div className="liquid-glass border border-white/5 rounded-[1.25rem] p-6 lg:p-8 min-h-[360px] flex flex-col justify-between group hover:border-white/20 transition-all shadow-lg">
-              <div className="flex items-start justify-between gap-4">
-                <div className="h-11 w-11 rounded-[0.75rem] border border-white/10 bg-white/5 flex items-center justify-center text-white">
-                  {/* Smart Lighting Lightbulb Icon */}
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                    <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1Zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7Z" />
-                  </svg>
-                </div>
-                <div className="flex flex-wrap justify-end gap-1 max-w-[70%]">
-                  {["GSAP", "WebGL", "Micro Interactions"].map((tag) => (
-                    <span key={tag} className="text-[9px] font-body text-white/50 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-12 text-left">
-                <h3 className="font-heading italic text-white text-3xl md:text-4xl tracking-[-1px] leading-none mb-3">
-                  Interactive Motion
-                </h3>
-                <p className="text-sm text-white/70 font-body font-light leading-snug max-w-[32ch]">
-                  GSAP and WebGL-driven motion keeps visitors engaged from the first scroll to the final interaction.
-                </p>
-              </div>
-            </div>
-
+          <div className="mt-16 w-full">
+            <BentoGrid />
           </div>
 
         </div>
