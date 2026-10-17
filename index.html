@@ -8,21 +8,78 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Suman | Web Developer for Local Businesses" />
     <meta property="og:description" content="Portfolio of Suman — freelance web developer building fast, interactive websites for local businesses. Clinics, academies, sports foundations, and service businesses." />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image" content="{{PRODUCTION_DOMAIN}}/og-image.png" />
     <meta property="og:url" content="{{PRODUCTION_DOMAIN}}" />
+    <link rel="canonical" href="{{PRODUCTION_DOMAIN}}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Suman | Web Developer for Local Businesses" />
     <meta name="twitter:description" content="Portfolio of Suman — freelance web developer building fast, interactive websites for local businesses. Clinics, academies, sports foundations, and service businesses." />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image" content="{{PRODUCTION_DOMAIN}}/og-image.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="google-site-verification" content="googled336773426ed5356" />
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() { dataLayer.push(arguments); }
-      gtag('js', new Date());
-      gtag('config', 'G-XXXXXXXXXX');
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ProfessionalService",
+        "name": "Suman",
+        "description": "Freelance web designer and developer in Bangalore building fast, responsive websites for local businesses.",
+        "url": "{{PRODUCTION_DOMAIN}}",
+        "telephone": "+918792009091",
+        "email": "sumankd0000@gmail.com",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Bangalore",
+          "addressCountry": "IN"
+        },
+        "serviceType": "Web design and development",
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Website packages",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Landing Page",
+                "description": "Single page, hero and CTA, mobile-responsive, contact form"
+              },
+              "price": "17000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Starter Site",
+                "description": "Up to 4 pages, mobile-responsive, standard design, contact form"
+              },
+              "price": "28000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Growth Site",
+                "description": "Up to 8 pages, booking integration, custom design, basic CMS"
+              },
+              "price": "50000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Custom Build",
+                "description": "10+ pages, fully custom design, CMS plus e-commerce or booking"
+              },
+              "price": "80000",
+              "priceCurrency": "INR"
+            }
+          ]
+        }
+      }
     </script>
   </head>
   <body>
