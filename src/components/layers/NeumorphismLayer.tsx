@@ -11,13 +11,9 @@ import SocialCards from "../SocialCards";
 import { ProjectVideo } from "../ProjectVideo";
 
 const SOCIAL_FAN_CARDS_DATA = [
-  { videoUrl: "/images/projects/imeags/zenvora-clinic.mp4", alt: "Zenvora Aesthetics website preview", linkUrl: "https://www.zenvoraaesthetics.in/" },
-  { videoUrl: "/images/projects/imeags/kites-sports-foundation.mp4", alt: "Kites Sports Foundation website preview", linkUrl: "https://www.kitessportsfoundation.in/" },
-  { videoUrl: "/images/projects/imeags/titan-football-academy.mp4", alt: "Play 365 Titan Football Academy website preview", linkUrl: "https://www.play365titanfa.in/" },
-  { videoUrl: "/images/projects/imeags/kites-sports-foundation.mp4", alt: "Kites Sports Foundation website view", linkUrl: "https://www.kitessportsfoundation.in/" },
-  { videoUrl: "/images/projects/imeags/zenvora-clinic.mp4", alt: "Zenvora Aesthetics interface view", linkUrl: "https://www.zenvoraaesthetics.in/" },
-  { videoUrl: "/images/projects/imeags/titan-football-academy.mp4", alt: "Play 365 Titan FA academy site view", linkUrl: "https://www.play365titanfa.in/" },
-  { videoUrl: "/images/projects/imeags/zenvora-clinic.mp4", alt: "Zenvora Aesthetics clinic preview", linkUrl: "https://www.zenvoraaesthetics.in/" }
+  { videoUrl: "/images/projects/imeags/zenvora-clinic.mp4", alt: "Zenvora Aesthetics — aesthetic clinic website", linkUrl: "https://www.zenvoraaesthetics.in/" },
+  { videoUrl: "/images/projects/imeags/kites-sports-foundation.mp4", alt: "Kites Sports Foundation — cricket & football arena", linkUrl: "https://www.kitessportsfoundation.in/" },
+  { videoUrl: "/images/projects/imeags/titan-football-academy.mp4", alt: "Play 365 Titan FA — football academy portal", linkUrl: "https://www.play365titanfa.in/" },
 ];
 
 export function NeumorphismLayer() {
@@ -315,7 +311,7 @@ export function NeumorphismLayer() {
               <Layers className="h-5 w-5 text-indigo-500 shrink-0" /> Interactive Cover Fan
             </h3>
             <p className="mt-2 text-xs text-slate-500 font-body max-w-md mx-auto leading-relaxed">
-              Hover, click or paginate through high-contrast premium photographic works. Experience 1:1 tactile depth feedback on cursor focus.
+              Hover, click or paginate through live client website builds. Experience 1:1 tactile depth feedback on cursor focus.
             </p>
           </div>
 

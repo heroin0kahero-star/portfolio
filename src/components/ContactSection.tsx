@@ -36,9 +36,8 @@ export default function ContactSection() {
 
           <p className="text-sm md:text-base text-white/60 font-body font-light leading-relaxed max-w-xl">
             This portfolio is a single-page showcase of the kind of functional front-end work I
-            build for real clients — five distinct visual systems (Cinematic Space, Tactile
-            Neumorphism, Raw Brutalism, Neo-Brutalist Playground, and an experimental WebGL
-            layer) wrapped into one scroll-linked experience.
+            build for real clients — four distinct visual systems (Cinematic Space, Tactile
+            Neumorphism, Raw Brutalism, and Neo-Brutalist Playground) wrapped into one scroll-linked experience.
           </p>
 
           <p className="text-sm text-white/40 font-mono max-w-xl leading-relaxed">

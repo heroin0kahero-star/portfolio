@@ -15,6 +15,13 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     tags: ["Aesthetic Clinic", "Skincare", "Web Design"],
     role: "Web Developer & Designer",
     siteUrl: "https://www.zenvoraaesthetics.in/",
+    caseStudy: {
+      clientNeeded:
+        "A premium, trustworthy online presence for an aesthetic clinic offering skin, hair, and fat-loss treatments.",
+      whatIBuilt:
+        "A clean, soft-neutral clinic website with service pages, booking inquiry, and mobile-responsive design.",
+      result: "TODO(result): add conversion or inquiry metric",
+    },
   },
   {
     id: "proj-2",
@@ -28,6 +35,13 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     tags: ["Web Development", "Sports", "Non-Profit Web"],
     role: "Web Developer",
     siteUrl: "https://www.kitessportsfoundation.in/",
+    caseStudy: {
+      clientNeeded:
+        "A bold, high-energy website to showcase programmes, events, and community outreach for a cricket and football arena.",
+      whatIBuilt:
+        "An informational sports foundation site with event listings, programme details, and community outreach sections.",
+      result: "TODO(result): add registration or traffic metric",
+    },
   },
   {
     id: "proj-3",
@@ -41,5 +55,12 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     tags: ["Web Development", "Football", "Academy Portal"],
     role: "Web Developer",
     siteUrl: "https://www.play365titanfa.in/",
+    caseStudy: {
+      clientNeeded:
+        "A web portal for a football academy to publish news, fixtures, and showcase player talent.",
+      whatIBuilt:
+        "A football academy portal with news blog, fixture listings, and a talent showcase for players.",
+      result: "TODO(result): add signup or engagement metric",
+    },
   },
 ];

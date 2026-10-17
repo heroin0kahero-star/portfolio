@@ -5,11 +5,13 @@
 
 import React from "react";
 import { motion, type Variants } from "motion/react";
+import { PORTFOLIO_PROJECTS } from "../../data";
 import { FadingVideo } from "../FadingVideo";
 import { BlurText } from "../BlurText";
 import { TextRotate } from "../TextRotate";
 import { BentoGrid } from "../BentoGrid";
 import { TestimonialsMarquee } from "../TestimonialsMarquee";
+import { CaseCard } from "../CaseCard";
 
 // Built-in SVG ArrowUpRight icon
 function ArrowUpRightIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -129,6 +131,27 @@ export function SpaceLayer() {
 
         {/* Social Proof Marquee */}
         <TestimonialsMarquee />
+
+        {/* Case Studies */}
+        <div className="relative z-10 pt-20 pb-16 px-6 md:px-12 text-center">
+          <span className="text-[10px] tracking-widest text-white/40 uppercase font-mono block mb-4">
+            Case Studies
+          </span>
+          <h2 className="font-heading italic text-4xl md:text-5xl text-white leading-none mb-12">
+            Client Work
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {PORTFOLIO_PROJECTS.map((p) => (
+              <CaseCard
+                key={p.id}
+                title={p.title}
+                client={p.client}
+                siteUrl={p.siteUrl}
+                caseStudy={p.caseStudy}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* SECTION 2: CAPABILITIES VIEW */}

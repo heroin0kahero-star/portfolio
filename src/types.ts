@@ -18,6 +18,11 @@ export interface PortfolioProject {
   tags: string[];
   role?: string;
   siteUrl?: string;
+  caseStudy?: {
+    clientNeeded: string;
+    whatIBuilt: string;
+    result?: string; // TODO(result): fill in concrete metric
+  };
 }
 
 export enum PortfolioLayer {
