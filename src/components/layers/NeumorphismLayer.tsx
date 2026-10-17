@@ -8,15 +8,16 @@ import { motion } from "motion/react";
 import { PORTFOLIO_PROJECTS } from "../../data";
 import { Sliders, Eye, Heart, Camera, Aperture, ZoomIn, Layers } from "lucide-react";
 import SocialCards from "../SocialCards";
+import { ProjectVideo } from "../ProjectVideo";
 
 const SOCIAL_FAN_CARDS_DATA = [
-  { imgUrl: "https://placehold.co/400x400/e2e8e0/5b6b5a?text=Zenvora+Aesthetics", alt: "Zenvora Aesthetics website preview", linkUrl: "https://www.zenvoraaesthetics.in/" },
-  { imgUrl: "/images/projects/kites-sports-foundation-card.jpg", alt: "Kites Sports Foundation website preview", linkUrl: "https://www.kitessportsfoundation.in/" },
-  { imgUrl: "/images/projects/play-365-titanfa-card.jpg", alt: "Play 365 Titan Football Academy website preview", linkUrl: "https://www.play365titanfa.in/" },
-  { imgUrl: "/images/projects/kites-sports-foundation-card.jpg", alt: "Kites Sports Foundation website view", linkUrl: "https://www.kitessportsfoundation.in/" },
-  { imgUrl: "https://placehold.co/400x400/e2e8e0/5b6b5a?text=Zenvora+Aesthetics", alt: "Zenvora Aesthetics interface view", linkUrl: "https://www.zenvoraaesthetics.in/" },
-  { imgUrl: "/images/projects/play-365-titanfa-card.jpg", alt: "Play 365 Titan FA academy site view", linkUrl: "https://www.play365titanfa.in/" },
-  { imgUrl: "https://placehold.co/400x400/e2e8e0/5b6b5a?text=Zenvora+Aesthetics", alt: "Zenvora Aesthetics live demo view", linkUrl: "https://www.zenvoraaesthetics.in/" }
+  { videoUrl: "/images/projects/imeags/zenvora-clinic.mp4", alt: "Zenvora Aesthetics website preview", linkUrl: "https://www.zenvoraaesthetics.in/" },
+  { videoUrl: "/images/projects/imeags/kites-sports-foundation.mp4", alt: "Kites Sports Foundation website preview", linkUrl: "https://www.kitessportsfoundation.in/" },
+  { videoUrl: "/images/projects/imeags/titan-football-academy.mp4", alt: "Play 365 Titan Football Academy website preview", linkUrl: "https://www.play365titanfa.in/" },
+  { videoUrl: "/images/projects/imeags/kites-sports-foundation.mp4", alt: "Kites Sports Foundation website view", linkUrl: "https://www.kitessportsfoundation.in/" },
+  { videoUrl: "/images/projects/imeags/zenvora-clinic.mp4", alt: "Zenvora Aesthetics interface view", linkUrl: "https://www.zenvoraaesthetics.in/" },
+  { videoUrl: "/images/projects/imeags/titan-football-academy.mp4", alt: "Play 365 Titan FA academy site view", linkUrl: "https://www.play365titanfa.in/" },
+  { videoUrl: "/images/projects/imeags/zenvora-clinic.mp4", alt: "Zenvora Aesthetics clinic preview", linkUrl: "https://www.zenvoraaesthetics.in/" }
 ];
 
 export function NeumorphismLayer() {
@@ -84,12 +85,10 @@ export function NeumorphismLayer() {
                     style={isActive ? neuButtonActive : neuOutset}
                     className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 border border-white/40 flex items-center justify-center p-0.5"
                   >
-                    <img 
-                      referrerPolicy="no-referrer"
-                      loading="lazy"
-                      src={p.thumbnailUrl ?? p.imageUrl} 
-                      alt={`${p.title} — website preview thumbnail`}
-                      className="h-full w-full object-cover rounded-lg"
+                    <ProjectVideo
+                      src={p.videoUrl}
+                      ariaLabel={`${p.title} — website preview thumbnail`}
+                      className="h-full w-full rounded-lg"
                     />
                   </div>
                   <div className="truncate">
@@ -152,16 +151,14 @@ export function NeumorphismLayer() {
                 </div>
 
                 <div className="w-full h-[320px] md:h-[400px] rounded-xl overflow-hidden relative shadow-inner">
-                  <img
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    src={selectedProj.imageUrl}
-                    alt={`${selectedProj.title} — active master preview`}
+                  <ProjectVideo
+                    src={selectedProj.videoUrl}
+                    ariaLabel={`${selectedProj.title} — active master preview`}
+                    className="w-full h-full rounded-xl select-none pointer-events-none"
                     style={{
                       filter: `brightness(${brightness}%) contrast(${contrast}%) grayscale(${grayscale}%)`,
                       transition: "filter 0.15s ease"
                     }}
-                    className="w-full h-full object-cover select-none pointer-events-none rounded-xl"
                   />
                   
                   {/* Photo details bottom bar overlay */}

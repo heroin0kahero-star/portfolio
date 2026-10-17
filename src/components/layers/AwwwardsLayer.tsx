@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { PORTFOLIO_PROJECTS } from "../../data";
 import { Sparkles, Info, ArrowUpRight, Cpu } from "lucide-react";
+import { ProjectVideo } from "../ProjectVideo";
 
 export function AwwwardsLayer() {
   const [activeSlide, setActiveSlide] = useState(0);
@@ -105,12 +106,10 @@ export function AwwwardsLayer() {
               <div className="absolute inset-x-0 top-0 h-1 bg-indigo-500/30 blur-[2px] animate-scan z-20 pointer-events-none" />
 
               <div className="w-full h-full bg-neutral-900 relative overflow-hidden flex items-center justify-center">
-                <img
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                  src={currentProj.imageUrl}
-                  alt={`${currentProj.title} — website screenshot`}
-                  className="w-full h-full object-cover select-none pointer-events-none scale-100 group-hover:scale-105 transition-all duration-[800ms] filter grayscale select-none"
+                <ProjectVideo
+                  src={currentProj.videoUrl}
+                  ariaLabel={`${currentProj.title} — website screenshot`}
+                  className="w-full h-full object-cover select-none pointer-events-none scale-100 group-hover:scale-105 transition-all duration-[800ms] filter grayscale"
                 />
                 
                 {/* Visual displacement indicator */}

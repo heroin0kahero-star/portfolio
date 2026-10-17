@@ -11,8 +11,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     client: "Zenvora Aesthetics",
     description:
       "A premium aesthetic clinic website I designed and built — clean, soft-neutral skincare and clinic visuals for Zenvora Aesthetics in Indiranagar.",
-    imageUrl: "https://placehold.co/800x800/e2e8e0/5b6b5a?text=Zenvora+Aesthetics",
-    thumbnailUrl: "https://placehold.co/400x400/e2e8e0/5b6b5a?text=Zenvora",
+    videoUrl: "/images/projects/imeags/zenvora-clinic.mp4",
     tags: ["Aesthetic Clinic", "Skincare", "Web Design"],
     role: "Web Developer & Designer",
     siteUrl: "https://www.zenvoraaesthetics.in/",
@@ -25,8 +24,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     client: "Kites Sports Foundation",
     description:
       "Informational website for a sports foundation — programmes, events, and community outreach presented in a bold, high-energy layout.",
-    imageUrl: "/images/projects/kites-sports-foundation-preview.jpg",
-    thumbnailUrl: "/images/projects/kites-sports-foundation-thumb.jpg",
+    videoUrl: "/images/projects/imeags/kites-sports-foundation.mp4",
     tags: ["Web Development", "Sports", "Non-Profit Web"],
     role: "Web Developer",
     siteUrl: "https://www.kitessportsfoundation.in/",
@@ -39,8 +37,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     client: "Play 365",
     description:
       "Web portal for Play 365 Titan Football Academy — academy news, fixtures, and a talent showcase built to put the academy on the map.",
-    imageUrl: "/images/projects/play-365-titanfa-preview.jpg",
-    thumbnailUrl: "/images/projects/play-365-titanfa-thumb.jpg",
+    videoUrl: "/images/projects/imeags/titan-football-academy.mp4",
     tags: ["Web Development", "Football", "Academy Portal"],
     role: "Web Developer",
     siteUrl: "https://www.play365titanfa.in/",

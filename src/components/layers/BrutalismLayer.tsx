@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { PORTFOLIO_PROJECTS } from "../../data";
 import { Shield, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
+import { ProjectVideo } from "../ProjectVideo";
 
 export function BrutalismLayer() {
   const webProjects = PORTFOLIO_PROJECTS.filter(p => p.category === "web");
@@ -122,11 +123,9 @@ export function BrutalismLayer() {
               {/* Photo Projection container */}
               <div className="h-[380px] bg-neutral-900 overflow-hidden relative border-2 border-neutral-800 flex items-center justify-center">
                 {hoverIndex !== null ? (
-                  <img
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    src={webProjects[hoverIndex].imageUrl}
-                    alt={`${webProjects[hoverIndex].title} — website screenshot`}
+                  <ProjectVideo
+                    src={webProjects[hoverIndex].videoUrl}
+                    ariaLabel={`${webProjects[hoverIndex].title} — website screenshot`}
                     className="w-full h-full object-cover transition-transform duration-300 scale-105 filter saturate-150 contrast-125 brightness-95"
                   />
                 ) : (

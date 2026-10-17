@@ -12,8 +12,9 @@ export interface PortfolioProject {
   year: string;
   client: string;
   description: string;
-  imageUrl: string;
+  imageUrl?: string;
   thumbnailUrl?: string;
+  videoUrl?: string;
   tags: string[];
   role?: string;
   siteUrl?: string;

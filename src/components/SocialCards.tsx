@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import gsap from "gsap";
+import { ProjectVideo } from "./ProjectVideo";
 
 export interface CardItem {
-  imgUrl: string;
+  imgUrl?: string;
+  videoUrl?: string;
   alt?: string;
   linkUrl?: string;
 }
@@ -262,9 +264,21 @@ export default function SocialCards({ cards }: SocialCardsProps) {
       <div className="flex items-center justify-center w-full max-w-[90rem]">
         <div ref={containerRef} className="fan-layout flex relative justify-center items-center w-full max-w-[80rem]">
           {cards.map((card, index) => {
-            const image = (
+            const image = card.videoUrl ? (
+              <ProjectVideo
+                src={card.videoUrl}
+                ariaLabel={card.alt || `Card ${index}`}
+                className="absolute inset-0 w-full h-full z-10"
+              />
+            ) : (
               <div className="relative w-full h-full overflow-hidden">
-                <img src={card.imgUrl} referrerPolicy="no-referrer" loading="lazy" alt={card.alt || `Card ${index}`} className="absolute inset-0 w-full h-full object-cover z-10" />
+                <img
+                  src={card.imgUrl}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  alt={card.alt || `Card ${index}`}
+                  className="absolute inset-0 w-full h-full object-cover z-10"
+                />
               </div>
             );
             return card.linkUrl ? (
