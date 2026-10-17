@@ -20,10 +20,6 @@ const BrutalismLayer = lazy(() =>
 const NeoBrutalismLayer = lazy(() =>
   import("./components/layers/NeoBrutalismLayer").then((m) => ({ default: m.NeoBrutalismLayer }))
 );
-const AwwwardsLayer = lazy(() =>
-  import("./components/layers/AwwwardsLayer").then((m) => ({ default: m.AwwwardsLayer }))
-);
-
 import LoadingScreen from "./components/LoadingScreen";
 
 // Import responsive cursor system wrappers
@@ -31,7 +27,7 @@ import { MagneticCursor } from "./components/MagneticCursor";
 import { TidalWaveCursor } from "./components/TidalWaveCursor";
 import { CustomBrutalistCursor } from "./components/CustomBrutalistCursor";
 import { NeoBrutalistCursor } from "./components/NeoBrutalistCursor";
-import { TubesCursor } from "./components/TubesCursor";
+
 
 // Import other requested visual block components
 import { MagneticText } from "./components/MagneticText";
@@ -42,7 +38,6 @@ import { LayerFallback } from "./components/LayerFallback";
 import ContactSection from "./components/ContactSection";
 
 import {
-  Sparkles,
   Orbit,
   Compass,
   Radio,
@@ -74,7 +69,6 @@ export default function App() {
       { id: "tactile", val: PortfolioLayer.NEUMORPHISM },
       { id: "raw", val: PortfolioLayer.BRUTALISM },
       { id: "playful", val: PortfolioLayer.NEO_BRUTALISM },
-      { id: "tubes", val: PortfolioLayer.EXPERIMENTAL },
     ];
 
     const handleScroll = () => {
@@ -102,12 +96,11 @@ export default function App() {
 
   // Soft smooth scroll to target dimensional layer block
   const handleScrollToSegment = (layerId: PortfolioLayer) => {
-    const idMap: Record<PortfolioLayer, string> = {
+    const idMap: Partial<Record<PortfolioLayer, string>> = {
       [PortfolioLayer.CINEMATIC_SPACE]: "space",
       [PortfolioLayer.NEUMORPHISM]: "tactile",
       [PortfolioLayer.BRUTALISM]: "raw",
       [PortfolioLayer.NEO_BRUTALISM]: "playful",
-      [PortfolioLayer.EXPERIMENTAL]: "tubes",
     };
 
     const targetElement = document.getElementById(idMap[layerId]);
@@ -147,8 +140,7 @@ export default function App() {
               { id: PortfolioLayer.CINEMATIC_SPACE, label: "Space", icon: Orbit },
               { id: PortfolioLayer.NEUMORPHISM, label: "Tactile", icon: Compass },
               { id: PortfolioLayer.BRUTALISM, label: "Raw", icon: Radio },
-              { id: PortfolioLayer.NEO_BRUTALISM, label: "Playful", icon: Zap },
-              { id: PortfolioLayer.EXPERIMENTAL, label: "Tubes", icon: Sparkles }
+              { id: PortfolioLayer.NEO_BRUTALISM, label: "Playful", icon: Zap }
             ].map((tab) => {
               const active = activeLayer === tab.id;
               const Icon = tab.icon;
@@ -233,15 +225,6 @@ export default function App() {
               <NeoBrutalismLayer />
             </div>
           </NeoBrutalistCursor>
-        </SectionBoundary>
-      </div>
-
-      {/* LAYER 5: EXPERIMENTAL TUBES / AWWWARDS */}
-      <div id="tubes" className="relative">
-        <SectionBoundary label="05 / TUBES">
-          <TubesCursor>
-            <AwwwardsLayer />
-          </TubesCursor>
         </SectionBoundary>
       </div>
 
