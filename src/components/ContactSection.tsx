@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Mail, ArrowUpRight, Globe, User } from "lucide-react";
+import { Mail, ArrowUpRight, Globe, User, Phone } from "lucide-react";
 import { PORTFOLIO_PROJECTS, CONTACT_EMAIL } from "../data";
 
 export default function ContactSection() {
@@ -41,7 +41,7 @@ export default function ContactSection() {
             layer) wrapped into one scroll-linked experience.
           </p>
 
-          <p className="text-xs text-white/40 font-mono max-w-xl leading-relaxed">
+          <p className="text-sm text-white/40 font-mono max-w-xl leading-relaxed">
             You just scrolled through four different functional designs in a single website —
             every layer is a live, interactive demo, not a static mockup. If you need a site like
             this for your brand, studio, or business, let&apos;s talk.
@@ -94,11 +94,21 @@ export default function ContactSection() {
             </p>
 
             <a
-              href={`mailto:${CONTACT_EMAIL}?subject=Project%20Inquiry%20%E2%80%94%20via%20suman.design`}
+              href={`mailto:${CONTACT_EMAIL}?subject=Project%20Inquiry%20%E2%80%94%20via%20{{PRODUCTION_DOMAIN}}`}
               className="mt-2 inline-flex items-center gap-3 rounded-full bg-white text-black px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-indigo-400 hover:text-white transition-colors"
             >
               <Mail className="h-4 w-4" />
               {CONTACT_EMAIL}
+            </a>
+
+            <a
+              href={`https://wa.me/{{WHATSAPP_NUMBER}}?text=${encodeURIComponent("Hi Suman, I saw your portfolio and I'd like a website for my business")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.05] px-7 py-3.5 text-sm font-semibold tracking-wide text-white/90 hover:bg-white/[0.1] hover:text-white transition-colors"
+            >
+              <Phone className="h-4 w-4 text-white" />
+              WhatsApp
             </a>
 
             <span className="font-mono text-[10px] text-white/35 tracking-widest uppercase">

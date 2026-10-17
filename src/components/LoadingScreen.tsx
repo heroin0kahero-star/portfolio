@@ -1,6 +1,5 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * @license SPDX-License-Identifier: Apache-2.0
  */
 
 import React, { useEffect, useState } from "react";
@@ -25,33 +24,58 @@ export default function LoadingScreen({
   onComplete,
   tips = DEFAULT_TIPS,
   tipInterval = 2800,
-  autoProgressDuration = 1500,
+  autoProgressDuration = 800,
 }: LoadingScreenProps) {
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [showCursor, setShowCursor] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  const [skipped, setSkipped] = useState(false);
+
+  // Skip loader entirely on repeat visits or under prefers-reduced-motion
+  useEffect(() => {
+    const hasSeen = typeof sessionStorage !== "undefined"
+      ? sessionStorage.getItem("portfolio:loader-seen") === "1"
+      : false;
+    const reducedMotion = typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
+
+    if (hasSeen || reducedMotion) {
+      setSkipped(true);
+      if (onComplete) onComplete();
+      return;
+    }
+
+    // Mark as seen for future visits
+    try {
+      sessionStorage.setItem("portfolio:loader-seen", "1");
+    } catch {
+      // sessionStorage unavailable — ignore
+    }
+  }, [onComplete]);
 
   // Auto incremental progress simulation
   useEffect(() => {
+    if (skipped) return;
     let startTime = Date.now();
     const intervalTime = 30; // fast tick
 
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const calculatedRatio = elapsed / autoProgressDuration;
-      
+
       if (calculatedRatio >= 1.0) {
         setProgress(100);
         clearInterval(timer);
-        
+
         // Let it stay at 100% briefly before fading and executing callback
         setTimeout(() => {
           setIsFading(true);
           setTimeout(() => {
             if (onComplete) onComplete();
-          }, 300); // fade transition time
-        }, 200);
+          }, 200); // fade transition time
+        }, 100);
       } else {
         // Curve the progress to make it feel natural (ease-out style)
         const easeRatio = 1 - Math.pow(1 - calculatedRatio, 2);
@@ -60,28 +84,31 @@ export default function LoadingScreen({
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [autoProgressDuration, onComplete]);
+  }, [autoProgressDuration, onComplete, skipped]);
 
   // Rotate tips
   useEffect(() => {
-    if (tips.length === 0) return;
+    if (tips.length === 0 || skipped) return;
     const interval = setInterval(() => {
       setCurrentTipIndex((prev) => (prev + 1) % tips.length);
     }, tipInterval);
     return () => clearInterval(interval);
-  }, [tips, tipInterval]);
+  }, [tips, tipInterval, skipped]);
 
   // Terminal trailing cursor blinker
   useEffect(() => {
+    if (skipped) return;
     const cursorTimer = setInterval(() => {
       setShowCursor((prev) => !prev);
     }, 530);
     return () => clearInterval(cursorTimer);
-  }, []);
+  }, [skipped]);
+
+  if (skipped) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-black text-white flex flex-col items-center justify-center px-6 select-none transition-all duration-[300ms] cubic-bezier(0.16, 1, 0.3, 1) ${
+      className={`fixed inset-0 z-[9999] bg-black text-white flex flex-col items-center justify-center px-6 select-none transition-all duration-[200ms] cubic-bezier(0.16, 1, 0.3, 1) ${
         isFading ? "opacity-0 pointer-events-none scale-102 blur-md" : "opacity-100 pointer-events-auto"
       }`}
     >
@@ -93,7 +120,6 @@ export default function LoadingScreen({
       </div>
 
       <div className="w-full max-w-xl text-center space-y-12 z-10">
-        
         {/* Clean minimal indicator */}
         <div className="inline-flex items-center gap-2 border border-white/20 px-3.5 py-1.5 rounded-sm bg-white/5 font-mono text-[9px] tracking-[4px] uppercase text-neutral-400">
           <span className="h-2 w-2 rounded-full bg-white opacity-80 animate-pulse" />
@@ -115,10 +141,10 @@ export default function LoadingScreen({
             <span>COMPILING PORTFOLIO v2</span>
             <span className="font-bold text-white">{progress}%</span>
           </div>
-          
+
           {/* Flat black-and-white minimalist bar */}
           <div className="h-2 border border-white/20 bg-neutral-950 p-[1px] rounded-none relative overflow-hidden flex items-center">
-            <div 
+            <div
               style={{ width: `${progress}%` }}
               className="h-full bg-white transition-all duration-100 ease-out shadow-[0_0_8px_rgba(255,255,255,0.4)]"
             />
@@ -132,7 +158,6 @@ export default function LoadingScreen({
             <span className={`inline-block ml-1 font-bold text-white ${showCursor ? 'opacity-100' : 'opacity-0'}`}>▋</span>
           </p>
         </div>
-
       </div>
 
       {/* Modern minimal footer details */}
