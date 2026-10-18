@@ -32,14 +32,14 @@ interface Build {
 // kind "demo" badges as "DEMO BUILD", "client" badges as "LIVE CLIENT SITE".
 const builds: Build[] = [
   {
-    slug: "suman-project",
-    kind: "demo", // the site itself calls this "Loco Bear Demo"
+    slug: "zenvora-clinic",
+    kind: "client",
     year: 2026,
-    title: "Suman Project — Loco Bear Demo",
+    title: "Zenvora Aesthetics — Skin, Hair & Fat-Loss Clinic",
     blurb:
-      "Multi-layer design, a custom-built cursor, interactive elements and a neumorphic style.",
-    tags: ["Web Design", "Interactive UI", "Multi-Layer"],
-    href: "https://suman-project.vercel.app/",
+      "A premium aesthetic clinic website I designed and built — clean, soft-neutral skincare and clinic visuals for Zenvora Aesthetics in Indiranagar.",
+    tags: ["Aesthetic Clinic", "Skincare", "Web Design"],
+    href: "https://www.zenvoraaesthetics.in/",
   },
   {
     slug: "kites-sports-foundation",
@@ -70,21 +70,27 @@ function BuildCard({ build }: { build: Build }) {
   const [videoErrored, setVideoErrored] = useState(false);
 
   // GSAP scroll reveal on a wrapper OUTSIDE CardContainer's inner div
-  // (which owns the inline tilt transform).
+  // (which owns the inline tilt transform). fromTo keeps cards visible
+  // even if the ScrollTrigger never fires.
   useEffect(() => {
     const el = revealRef.current;
     if (!el) return;
-    const anim = gsap.from(el, {
-      y: 40,
-      opacity: 0,
-      duration: 0.8,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: el,
-        start: "top 80%",
-        once: true,
-      },
-    });
+    const anim = gsap.fromTo(
+      el,
+      { y: 40, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 0.8,
+        ease: "power2.out",
+        immediateRender: false,
+        scrollTrigger: {
+          trigger: el,
+          start: "top 80%",
+          once: true,
+        },
+      }
+    );
     return () => {
       anim.kill();
     };
