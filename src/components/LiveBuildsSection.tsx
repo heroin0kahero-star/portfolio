@@ -141,7 +141,6 @@ function BuildCard({ build }: { build: Build }) {
           <CardItem translateZ={100} className="w-full mb-3">
             <CardVideo
               ref={videoRef}
-              webm={`/videos/builds/${build.slug}.webm`}
               mp4={`/videos/builds/${build.slug}.mp4`}
               title={build.title}
               onPlayingChange={setPlaying}

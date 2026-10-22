@@ -247,7 +247,7 @@ export const CardVideo = React.forwardRef<CardVideoApi, CardVideoProps>(
 
     stateRef.current = { playing, errored };
 
-    const hintText = coarse ? "TAP TO PLAY" : "\u25B6 HOVER TO PLAY";
+    const hintText = coarse ? "Tap to play" : "Hover to play";
 
     // Pointer coarseness — drives the hint label.
     useEffect(() => {
@@ -411,7 +411,6 @@ export const CardVideo = React.forwardRef<CardVideoApi, CardVideoProps>(
           <div
             className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-none border border-white/10 bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-bold text-white/90 shadow-[0_0_6px_#000]"
           >
-            <span aria-hidden="true">\u25B6</span>
             <span>{hintText}</span>
           </div>
         )}

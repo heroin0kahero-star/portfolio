@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Sparkles,
   Calculator,
@@ -126,6 +126,7 @@ function selectTierDefaults(tierId: TierId) {
 }
 
 export function NeoBrutalismLayer() {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const [selectedTier, setSelectedTier] = useState<TierId | null>(null);
   const [pagesStep, setPagesStep] = useState<number>(4);
   const [designStep, setDesignStep] = useState<number>(1);
@@ -203,6 +204,13 @@ export function NeoBrutalismLayer() {
     setFeaturesState((f) => ({ ...f, [id]: !f[id] }));
   };
 
+  const startCustomizing = () => {
+    applyTier("starter");
+    window.requestAnimationFrame(() => {
+      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const resetToTierDefaults = () => {
     if (selectedTier) applyTier(selectedTier);
   };
@@ -236,7 +244,11 @@ export function NeoBrutalismLayer() {
   };
 
   return (
-    <section className="relative min-h-screen bg-[#FFDE03] text-black py-20 px-4 md:px-8 select-none scroll-smooth border-y-[6px] border-black">
+    <section
+      id="pricing"
+      aria-labelledby="pricing-heading"
+      className="relative min-h-screen bg-[#FFDE03] text-black py-20 px-4 md:px-8 select-none scroll-smooth border-y-[6px] border-black"
+    >
       
       {/* Playful polka dots style underlay background */}
       <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{
@@ -246,25 +258,26 @@ export function NeoBrutalismLayer() {
 
       <div className="max-w-7xl mx-auto relative z-10 text-left">
         
-        {/* Layer Badge Card */}
-        <div className="inline-block border-4 border-black bg-white px-5 py-2 font-black text-xs uppercase shadow-[4px_4px_0px_#000] rotate-[-1deg] mb-8">
-          💥 Design Layer 04 — Neo-Brutalist Playground
-        </div>
-
-        {/* Title area */}
-        <div className="mb-12">
-          <h2 className="text-5xl md:text-8xl font-black tracking-tight uppercase leading-none">
-            WORK TOGETHER
+        {/* Section heading */}
+        <div className="mb-12 max-w-3xl">
+          <div className="mb-4 inline-block border-4 border-black bg-black px-4 py-1.5 font-black text-xs uppercase text-white shadow-[4px_4px_0px_rgba(0,0,0,0.35)]">
+            Pricing
+          </div>
+          <h2 id="pricing-heading" className="text-5xl md:text-8xl font-black tracking-tight uppercase leading-none">
+            Clear pricing.
+            <br />
+            No surprises.
           </h2>
-          <p className="text-xl md:text-2xl font-bold font-mono tracking-tight mt-2 bg-yellow-300 border-2 border-black p-3 inline-block shadow-[3px_3px_0px_#000]">
-            Pick a Package or Customize in Real-Time — Transparent INR Estimates!
+          <p className="mt-4 max-w-2xl font-body text-base font-medium leading-relaxed text-black/70 md:text-lg">
+            One-time project pricing in INR. Pick the closest package, then adjust the scope
+            to fit your business.
           </p>
         </div>
 
         {/* SECTION A: PRESET PACKAGE CARDS */}
         <div className="mb-10">
-          <div className="inline-block border-4 border-black bg-black text-white px-4 py-1.5 font-black text-xs uppercase shadow-[4px_4px_0px_rgba(0,0,0,0.35)] mb-5">
-            Step 1 — Pick Your Package
+          <div className="mb-5 inline-block border-4 border-black bg-white px-4 py-1.5 font-black text-xs uppercase shadow-[4px_4px_0px_#000]">
+            Choose a starting point
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
             {TIERS.map((t) => {
@@ -280,34 +293,34 @@ export function NeoBrutalismLayer() {
                 >
                   {active && (
                     <div className="absolute -top-3 -right-3 border-4 border-black bg-black text-white text-[10px] font-black uppercase px-3 py-1 rotate-3">
-                      Selected ✓
+                      Selected
                     </div>
                   )}
                   <h3 className="text-2xl font-black uppercase tracking-tight">{t.name}</h3>
-                  <p className="text-[10px] font-mono uppercase text-neutral-500 mt-1 font-bold">{`[PACKAGE_${t.id.toUpperCase()}]`}</p>
                   <p className="text-xs text-neutral-600 mt-3 leading-snug font-body">{t.blurb}</p>
 
                   <div className="mt-4 font-mono">
-                    <span className="text-[10px] font-black uppercase text-neutral-500 block">
-                      Estimated Range
-                    </span>
-                    <span className="text-3xl md:text-4xl font-black tracking-tighter block mt-1">
+                    <span className="text-3xl md:text-4xl font-black tracking-tighter block">
                       {t.rangeLabel}
                     </span>
-                    <span className="text-sm font-bold text-neutral-500 block mt-1">ONE-TIME PROJECT ESTIMATE</span>
+                    <span className="text-xs font-bold text-neutral-500 block mt-1">
+                      One-time project estimate
+                    </span>
                   </div>
 
                   <ul className="mt-5 flex flex-col gap-2 text-xs font-bold uppercase font-mono flex-1">
                     {t.included.map((line) => (
                       <li key={line} className="flex items-start gap-2">
-                        <span className="text-green-600 font-black leading-none">✓</span>
+                        <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-700" />
                         <span>{line}</span>
                       </li>
                     ))}
                   </ul>
 
                   <button
+                    type="button"
                     onClick={() => applyTier(t.id)}
+                    aria-pressed={active}
                     className={`mt-6 w-full py-3.5 border-4 border-black text-sm font-black uppercase tracking-wide flex items-center justify-center gap-2 transition-all active:translate-y-0.5 cursor-pointer ${
                       active
                         ? "bg-black text-white shadow-[2px_2px_0px_#000]"
@@ -315,7 +328,7 @@ export function NeoBrutalismLayer() {
                     }`}
                   >
                     {active ? <CheckCircle className="h-4 w-4" /> : null}
-                    {active ? "Package Selected" : "Select This Package"}
+                    {active ? "Package selected" : "Select this package"}
                   </button>
                 </div>
               );
@@ -324,29 +337,31 @@ export function NeoBrutalismLayer() {
 
           {/* Standalone customize link */}
           <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-mono font-bold uppercase text-neutral-700">
+            <span className="text-sm font-body font-medium text-black/70">
               Want a different mix?
             </span>
             <button
-              onClick={() => applyTier("starter")}
+              type="button"
+              onClick={startCustomizing}
               className="inline-flex items-center gap-2 border-4 border-black bg-white px-4 py-2 text-xs font-black uppercase shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all cursor-pointer"
             >
-              Customize Instead <ArrowRight className="h-4 w-4" />
+              Customize instead <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
 
         {/* SECTION B: CUSTOMIZE PANEL — revealed after a tier is selected */}
         {customizing && tier && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          <div ref={panelRef} className="grid scroll-mt-24 grid-cols-1 lg:grid-cols-12 gap-10 items-start">
 
             {/* CUSTOMIZE CONTROLS PANEL (7 cols) */}
             <div className="lg:col-span-7 bg-white border-[6px] border-black p-6 md:p-8 shadow-[8px_8px_0px_#000] rounded-none">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-4 border-black pb-4 mb-6">
                 <h3 className="text-2xl md:text-3xl font-black uppercase flex items-center gap-3">
-                  <Calculator className="h-6 w-6 stroke-3" /> Customize This Build
+                  <Calculator className="h-6 w-6 stroke-3" /> Customize this build
                 </h3>
                 <button
+                  type="button"
                   onClick={resetToTierDefaults}
                   className="inline-flex items-center gap-2 border-4 border-black bg-white px-3 py-2 text-[11px] font-black uppercase shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all cursor-pointer"
                 >
@@ -367,7 +382,7 @@ export function NeoBrutalismLayer() {
                 {/* Industry vertical chip select */}
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider font-mono block mb-3">
-                    🏥 Industry Vertical
+                    Industry
                   </span>
                   <div className="flex flex-wrap gap-2.5">
                     {INDUSTRIES.map((ind) => {
@@ -375,7 +390,9 @@ export function NeoBrutalismLayer() {
                       return (
                         <button
                           key={ind}
+                          type="button"
                           onClick={() => setIndustry(ind)}
+                          aria-pressed={active}
                           className={`px-4 py-2 text-xs font-black uppercase border-4 border-black transition-all active:translate-y-0.5 cursor-pointer ${
                             active ? "bg-black text-white" : "bg-white hover:bg-yellow-200 shadow-[3px_3px_0px_#000]"
                           }`}
@@ -392,7 +409,7 @@ export function NeoBrutalismLayer() {
                   <div className="border-4 border-black p-5 bg-orange-100">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                        📄 Number of Pages
+                        Number of pages
                       </span>
                       <span className="h-8 min-w-14 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
                         {pagesStep}
@@ -406,18 +423,20 @@ export function NeoBrutalismLayer() {
                   <div className="border-4 border-black p-5 bg-orange-100">
                     <div className="flex items-center justify-between gap-3 mb-2">
                       <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                        📄 Number of Pages
+                        Number of pages
                       </span>
                       <span className="h-8 min-w-14 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
                         {pagesStep}
                       </span>
                     </div>
                     <input
+                      id="pricing-pages"
                       type="range"
                       min={1}
                       max={20}
                       step={1}
                       value={pagesStep}
+                      aria-label="Number of pages"
                       onChange={(e) => setPagesStep(parseInt(e.target.value))}
                       className="w-full cursor-pointer accent-[#F27D26]"
                     />
@@ -435,18 +454,20 @@ export function NeoBrutalismLayer() {
                 <div className="border-4 border-black p-5 bg-white">
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                      🎨 Design Complexity
+                      Design complexity
                     </span>
                     <span className="h-8 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
                       {design}
                     </span>
                   </div>
                   <input
+                    id="pricing-design"
                     type="range"
                     min={0}
                     max={DESIGN_LEVELS.length - 1}
                     step={1}
                     value={designStep}
+                    aria-label="Design complexity"
                     onChange={(e) => setDesignStep(parseInt(e.target.value))}
                     className="w-full cursor-pointer accent-[#F27D26]"
                   />
@@ -478,7 +499,7 @@ export function NeoBrutalismLayer() {
                 {/* Features checkboxes */}
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider font-mono block mb-3">
-                    ⚙️ Features
+                    Features
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {FEATURE_IDS.map((id) => {
@@ -486,10 +507,12 @@ export function NeoBrutalismLayer() {
                       const included = tier.features.includes(id);
                       const active = featuresState[id];
                       return (
-                        <div
+                        <button
                           key={id}
+                          type="button"
                           onClick={() => toggleFeature(id)}
-                          className={`border-4 border-black p-4 cursor-pointer flex items-start justify-between gap-3 transition-all select-none active:translate-y-0.5 ${
+                          aria-pressed={active}
+                          className={`border-4 border-black p-4 cursor-pointer flex items-start justify-between gap-3 transition-all select-none active:translate-y-0.5 text-left ${
                             active
                               ? cfg.recurring
                                 ? "bg-pink-300 shadow-[4px_4px_0px_#000]"
@@ -497,17 +520,17 @@ export function NeoBrutalismLayer() {
                               : "bg-white hover:bg-neutral-50"
                           }`}
                         >
-                          <div>
-                            <h4 className="text-sm font-black uppercase leading-tight">{cfg.label}</h4>
-                            <p className="text-[10px] text-neutral-600 mt-1 font-mono font-bold uppercase">
+                          <span>
+                            <span className="block text-sm font-black uppercase leading-tight">{cfg.label}</span>
+                            <span className="block text-[10px] text-neutral-600 mt-1 font-mono font-bold uppercase">
                               {cfg.recurring ? `${inr(cfg.fee)}/month · est.` : `+ ${inr(cfg.fee)} est.`}
                               {included ? " · included in package" : ""}
-                            </p>
-                          </div>
-                          <div className="h-7 w-7 shrink-0 border-4 border-black bg-white flex items-center justify-center font-black">
-                            {active ? "✓" : ""}
-                          </div>
-                        </div>
+                            </span>
+                          </span>
+                          <span className="h-7 w-7 shrink-0 border-4 border-black bg-white flex items-center justify-center font-black">
+                            {active ? <CheckCircle className="h-4 w-4" /> : ""}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
@@ -516,18 +539,20 @@ export function NeoBrutalismLayer() {
                 {/* Delivery Timeframe */}
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider font-mono block mb-3">
-                    🚀 Delivery Timeframe
+                    Delivery timeframe
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
-                      { id: "Standard" as DeliveryChoice, label: "Standard Priority Delivery", days: COUNT_DOWN_STANDARD, feeNote: "Included" },
-                      { id: "Express" as DeliveryChoice, label: "Express First Class", days: COUNT_DOWN_EXPRESS, feeNote: `+${inr(EXPRESS_FEE)} est.` },
+                      { id: "Standard" as DeliveryChoice, label: "Standard delivery", days: COUNT_DOWN_STANDARD, feeNote: "Included" },
+                      { id: "Express" as DeliveryChoice, label: "Express delivery", days: COUNT_DOWN_EXPRESS, feeNote: `+${inr(EXPRESS_FEE)} est.` },
                     ].map((opt) => {
                       const active = delivery === opt.id;
                       return (
                         <button
                           key={opt.id}
+                          type="button"
                           onClick={() => setDelivery(opt.id)}
+                          aria-pressed={active}
                           className={`p-4 border-4 border-black text-sm font-black uppercase text-left transition-all relative ${
                             active ? "bg-orange-300 translate-y-1 shadow-[2px_2px_0px_#000]" : "bg-white hover:bg-neutral-50 shadow-[4px_4px_0px_#000]"
                           }`}
@@ -551,17 +576,20 @@ export function NeoBrutalismLayer() {
               {/* Display Box */}
               <div className="bg-yellow-400 border-[6px] border-black p-6 md:p-8 shadow-[8px_8px_0px_#000] rotate-[0.5deg]">
                 <span className="text-xs font-bold uppercase tracking-wider font-mono block mb-2 text-neutral-800">
-                  [LIVE ESTIMATE OVERVIEW]
+                  Your estimate
                 </span>
                 
                 <div className="flex justify-between items-baseline border-b-4 border-black pb-4 mb-2">
-                  <span className="text-lg font-black uppercase">Estimated Total</span>
-                  <span className="text-3xl md:text-5xl font-black font-sans bg-white border-2 border-black px-3 py-1 shadow-[2px_2px_0px_#000]">
+                  <span className="text-lg font-black uppercase">Estimated total</span>
+                  <span
+                    aria-live="polite"
+                    className="text-3xl md:text-5xl font-black font-sans bg-white border-2 border-black px-3 py-1 shadow-[2px_2px_0px_#000]"
+                  >
                     {inr(oneTime)}
                   </span>
                 </div>
                 <p className="text-[10px] font-mono font-bold uppercase text-neutral-700 mb-4">
-                  ⚠ This is an estimate — final quote confirmed after a quick scope call.
+                  This is an estimate. Final quote confirmed after a quick scope call.
                 </p>
 
                 {/* Breakdown */}
@@ -569,45 +597,47 @@ export function NeoBrutalismLayer() {
                   {items.map((item, i) => (
                     <li
                       key={i}
-                      className={item.recurring ? "text-pink-600 font-black" : ""}
+                      className={item.recurring ? "text-pink-700 font-black" : ""}
                     >
-                      {item.recurring ? "⟳ " : "✓ "}{item.text}
+                      {item.recurring ? "Recurring: " : ""}{item.text}
                     </li>
                   ))}
                   <li className="text-sm font-black border-t-2 border-black pt-2 mt-1">
-                    EST. TOTAL (ONE-TIME): {inr(oneTime)}
+                    Estimated total (one-time): {inr(oneTime)}
                   </li>
                   {monthly > 0 && (
-                    <li className="text-pink-600 font-black">
-                      RECURRING (EST.): {inr(monthly)}/month — keep the site maintained
+                    <li className="text-pink-700 font-black">
+                      Recurring estimate: {inr(monthly)}/month
                     </li>
                   )}
                   <li className="text-neutral-600 font-bold">
-                    INDUSTRY VERTICAL: {industry.toUpperCase()}
+                    Industry: {industry}
                   </li>
                 </ul>
 
                 {isSubmitted ? (
-                  <div className="bg-lime-400 border-4 border-black p-4 font-black uppercase text-center text-sm shadow-[4px_4px_0px_#000] my-2 animate-bounce">
-                    🎉 SPECIFICATION SUBMITTED! EST. BUDGET: {inr(oneTime)}{monthly > 0 ? ` + ${inr(monthly)}/month` : ""}
+                  <div role="status" className="bg-lime-400 border-4 border-black p-4 font-black uppercase text-center text-sm shadow-[4px_4px_0px_#000] my-2">
+                    Request ready. Your email app should open with the details filled in.
                   </div>
                 ) : (
                   <button
+                    type="button"
                     className="w-full py-4 neo-brutal-btn text-white hover:opacity-90 hover:scale-[1.01] transition-all text-lg font-black uppercase tracking-wide flex items-center justify-center gap-3 active:translate-y-1 cursor-pointer"
                     onClick={submitRequest}
                   >
-                    Launch This Request <Sparkles className="h-5 w-5 fill-current" />
+                    Send this request <Sparkles className="h-5 w-5 fill-current" />
                   </button>
                 )}
               </div>
 
-              {/* Playful Stamp Sticker */}
+              {/* Trust note */}
               <div className="border-4 border-black bg-pink-300 p-5 shadow-[4px_4px_0px_#000] -rotate-2 flex items-start gap-3">
                 <MessageSquare className="h-6 w-6 stroke-2 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-black uppercase">100% Transparent Billing</h4>
+                  <h4 className="text-sm font-black uppercase">Transparent billing</h4>
                   <p className="text-xs mt-1 leading-snug">
-                    No hidden margins. You configure what you activate, and we ship within the specified priority windows. Simple!
+                    No hidden margins. You choose what you need, and the final quote is agreed
+                    before any work starts.
                   </p>
                 </div>
               </div>
@@ -616,7 +646,7 @@ export function NeoBrutalismLayer() {
               <div className="border-4 border-black bg-white p-5 shadow-[4px_4px_0px_#000] rotate-1 flex items-start gap-3">
                 <Rocket className="h-6 w-6 stroke-2 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-black uppercase">{delivery === "Express" ? "Express Dispatch" : "Standard Delivery"}</h4>
+                  <h4 className="text-sm font-black uppercase">{delivery === "Express" ? "Express delivery" : "Standard delivery"}</h4>
                   <p className="text-xs mt-1 leading-snug font-mono uppercase">
                     {delivery === "Express" ? `${COUNT_DOWN_EXPRESS} · priority lane` : `${COUNT_DOWN_STANDARD} · included in price`}
                   </p>

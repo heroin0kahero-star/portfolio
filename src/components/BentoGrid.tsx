@@ -7,7 +7,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { Code2, Zap, ShieldCheck, Activity, BarChart3 } from "lucide-react";
+import { Globe2, Megaphone, Share2, CalendarCheck, Search } from "lucide-react";
 
 interface BentoTile {
   id: string;
@@ -20,47 +20,47 @@ interface BentoTile {
 
 const TILES: BentoTile[] = [
   {
-    id: "responsive",
-    title: "Responsive Interfaces",
+    id: "websites",
+    title: "Websites that fit your business",
     description:
-      "Every build adapts fluidly from pocket-sized phones to ultra-wide screens without losing intent.",
-    icon: BarChart3,
+      "A custom, mobile-first site built around how customers actually find and choose you — not a template with your logo dropped in.",
+    icon: Globe2,
     gradient: "from-indigo-500/20 to-purple-500/20",
-    span: { cols: 2, rows: 2 },
+    span: { cols: 2, rows: 1 },
   },
   {
-    id: "clean-code",
-    title: "Clean, Fast Code",
+    id: "seo",
+    title: "Found on Google",
     description:
-      "Component-driven development ships quickly and stays maintainable for every future page.",
-    icon: Code2,
+      "Clear page structure, local search basics, and copy that answers the questions customers are already typing.",
+    icon: Search,
     gradient: "from-indigo-500/10 to-indigo-500/10",
     span: { cols: 1, rows: 1 },
   },
   {
-    id: "interactive-motion",
-    title: "Interactive Motion",
+    id: "ads",
+    title: "Ads that bring enquiries",
     description:
-      "GSAP and WebGL-driven motion keeps visitors engaged from first scroll to final interaction.",
-    icon: Zap,
+      "Google and Meta campaigns set up, measured, and adjusted to turn attention into calls and messages.",
+    icon: Megaphone,
     gradient: "from-purple-500/10 to-purple-500/10",
     span: { cols: 1, rows: 1 },
   },
   {
-    id: "speed",
-    title: "Speed Optimized",
+    id: "social",
+    title: "Social media handled",
     description:
-      "Lazy-loaded assets, compressed media, and critical CSS for fast first paint.",
-    icon: Activity,
+      "A steady presence on the platforms your customers already use, without you chasing every post.",
+    icon: Share2,
     gradient: "from-pink-500/10 to-pink-500/10",
     span: { cols: 1, rows: 1 },
   },
   {
-    id: "booking-ready",
-    title: "Booking Ready",
+    id: "booking",
+    title: "Enquiries that land",
     description:
-      "Appointment systems, contact forms, and CMS built in for service businesses.",
-    icon: ShieldCheck,
+      "Contact forms, WhatsApp, appointment requests, and a simple follow-up flow so good leads do not sit unanswered.",
+    icon: CalendarCheck,
     gradient: "from-emerald-500/10 to-emerald-500/10",
     span: { cols: 1, rows: 1 },
   },
@@ -74,26 +74,25 @@ export function BentoGrid({ className = "" }: { className?: string }) {
   return (
     <div
       className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${className}`}
-      style={{ gridTemplateRows: "repeat(2, minmax(240px, auto))" }}
     >
       {TILES.map((tile) => {
         const Icon = tile.icon;
+        const colClass = tile.span.cols === 2 ? "md:col-span-2" : "md:col-span-1";
+        const rowClass = tile.span.rows === 2 ? "md:row-span-2" : "md:row-span-1";
         return (
           <motion.div
             key={tile.id}
             whileHover={reducedMotion ? {} : { y: -4 }}
-            className={`col-span-${tile.span.cols} row-span-${tile.span.rows} rounded-[1.25rem] border border-white/5 bg-white/[0.02] p-6 md:p-8 flex flex-col gap-3 group transition-all hover:bg-white/[0.03] hover:border-white/20`}
-            style={{
-              background: tile.gradient,
-            }}
+            className={`col-span-1 ${colClass} ${rowClass} rounded-[1.25rem] border border-white/5 bg-white/[0.02] p-6 md:p-8 flex flex-col gap-3 group transition-all hover:bg-white/[0.03] hover:border-white/20`}
+            style={{ background: tile.gradient }}
           >
             <div className="h-10 w-10 rounded-xl bg-white/[0.08] flex items-center justify-center text-indigo-400 group-hover:text-indigo-300 transition-colors">
-              <Icon className="h-5 w-5" />
+              <Icon className="h-5 w-5" strokeWidth={1.7} />
             </div>
             <h3 className="font-heading italic text-xl md:text-2xl text-white leading-tight">
               {tile.title}
             </h3>
-            <p className="text-sm text-white/60 font-body font-light leading-relaxed">
+            <p className="text-sm text-white/65 font-body font-light leading-relaxed">
               {tile.description}
             </p>
           </motion.div>

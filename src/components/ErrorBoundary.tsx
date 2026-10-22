@@ -36,20 +36,20 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
       return (
         <section className="relative min-h-[60vh] bg-[radial-gradient(circle_at_top,#1a1a2e_0%,#000_70%)] text-white flex flex-col items-center justify-center gap-5 px-6 text-center">
           <span className="text-[10px] tracking-[4px] text-white/40 uppercase font-mono">
-            [LAYER {this.props.label} OFFLINE]
+            Section unavailable
           </span>
           <h2 className="font-heading italic text-4xl md:text-6xl text-white/90">
             This section failed to load
           </h2>
           <p className="text-sm text-white/50 font-body font-light max-w-sm leading-relaxed">
-            Something went wrong behind the scenes while rendering this layer. The rest of the
-            portfolio is unaffected.
+            Something went wrong while rendering this section. The rest of the page is
+            unaffected.
           </p>
           <button
             onClick={this.handleRetry}
             className="mt-2 px-6 py-2.5 rounded-full border border-white/20 bg-white/5 text-xs uppercase tracking-widest font-mono text-white/80 hover:border-white/50 hover:bg-white/10 transition-all"
           >
-            Reload Layer
+            Try again
           </button>
         </section>
       );

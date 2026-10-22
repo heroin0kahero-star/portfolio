@@ -5,34 +5,6 @@
 
 import { CSSProperties } from "react";
 
-export interface PortfolioProject {
-  id: string;
-  title: string;
-  category: "graphic" | "photography" | "3d" | "web" | "all";
-  year: string;
-  client: string;
-  description: string;
-  imageUrl?: string;
-  thumbnailUrl?: string;
-  videoUrl?: string;
-  tags: string[];
-  role?: string;
-  siteUrl?: string;
-  caseStudy?: {
-    clientNeeded: string;
-    whatIBuilt: string;
-    result?: string; // TODO(result): fill in concrete metric
-  };
-}
-
-export enum PortfolioLayer {
-  CINEMATIC_SPACE = "Cinematic Space",
-  NEUMORPHISM = "Tactile Neumorphism",
-  BRUTALISM = "Raw Brutalism",
-  NEO_BRUTALISM = "Neo-Brutalist Playground",
-  EXPERIMENTAL = "Awwwards WebGL Experimental"
-}
-
 export interface FadingVideoProps {
   src: string;
   className?: string;
