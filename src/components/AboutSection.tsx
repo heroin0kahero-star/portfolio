@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Scroll-pinned About story: three portrait stages, two floating glass cards
- * per stage, and a WebGL dissolve between portraits.
+ * per stage, and an SVG mask blinds transition between portraits.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -114,29 +114,18 @@ const STAGES: AboutStage[] = [
   },
 ];
 
+// Roughly 70vh of scroll each on the 460vh pinned section.
 const TRANSITIONS = [
-  {
-    start: 0.3,
-    end: 0.385,
-    from: 0,
-    to: 1,
-    edgeColor: [1, 1, 1] as [number, number, number],
-  },
-  {
-    start: 0.63,
-    end: 0.715,
-    from: 1,
-    to: 2,
-    edgeColor: [1, 0.55, 0.22] as [number, number, number],
-  },
+  { start: 0.25, end: 0.402, from: 0, to: 1 },
+  { start: 0.56, end: 0.712, from: 1, to: 2 },
 ];
 
 // Entries lead the stage thresholds slightly so the incoming cards already have
 // presence when the Flip fires; the outgoing pair is gone before they arrive.
 const CARD_WINDOWS = [
-  { enterStart: 0.006, enterEnd: 0.088, exitStart: 0.255, exitEnd: 0.335 },
-  { enterStart: 0.352, enterEnd: 0.44, exitStart: 0.583, exitEnd: 0.635 },
-  { enterStart: 0.682, enterEnd: 0.77, exitStart: 1.2, exitEnd: 1.3 },
+  { enterStart: 0.006, enterEnd: 0.088, exitStart: 0.19, exitEnd: 0.252 },
+  { enterStart: 0.285, enterEnd: 0.378, exitStart: 0.5, exitEnd: 0.562 },
+  { enterStart: 0.596, enterEnd: 0.69, exitStart: 1.2, exitEnd: 1.3 },
 ];
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
@@ -191,18 +180,17 @@ function dissolveFor(progress: number): DissolveState {
         from: transition.from,
         to: transition.to,
         progress: clamp01((progress - transition.start) / (transition.end - transition.start)),
-        edgeColor: transition.edgeColor,
       };
     }
   }
 
   if (progress < TRANSITIONS[0].start) {
-    return { from: 0, to: 0, progress: 0, edgeColor: [1, 1, 1] };
+    return { from: 0, to: 0, progress: 0 };
   }
   if (progress < TRANSITIONS[1].start) {
-    return { from: 1, to: 1, progress: 0, edgeColor: [1, 0.55, 0.22] };
+    return { from: 1, to: 1, progress: 0 };
   }
-  return { from: 2, to: 2, progress: 0, edgeColor: [1, 0.68, 0.34] };
+  return { from: 2, to: 2, progress: 0 };
 }
 
 function cardTransform(
@@ -346,7 +334,7 @@ export default function AboutSection() {
       });
     }
 
-    const nextStage = p < 0.385 ? 0 : p < 0.715 ? 1 : 2;
+    const nextStage = p < TRANSITIONS[0].end ? 0 : p < TRANSITIONS[1].end ? 1 : 2;
     let flipStage: number | null = null;
 
     if (activeStageRef.current !== nextStage) {
@@ -466,7 +454,7 @@ export default function AboutSection() {
         {/* Stage background wash */}
         <div className="about-stage-glow pointer-events-none absolute inset-0" />
 
-        {/* Portrait dissolve */}
+        {/* SVG mask blinds */}
         <div className="about-portrait pointer-events-none">
           <div className="about-portrait__media">
             <PortraitDissolve
