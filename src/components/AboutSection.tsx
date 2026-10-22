@@ -131,15 +131,22 @@ const TRANSITIONS = [
   },
 ];
 
+// Entries lead the stage thresholds slightly so the incoming cards already have
+// presence when the Flip fires; the outgoing pair is gone before they arrive.
 const CARD_WINDOWS = [
   { enterStart: 0.006, enterEnd: 0.088, exitStart: 0.255, exitEnd: 0.335 },
-  { enterStart: 0.385, enterEnd: 0.466, exitStart: 0.583, exitEnd: 0.635 },
-  { enterStart: 0.715, enterEnd: 0.798, exitStart: 1.2, exitEnd: 1.3 },
+  { enterStart: 0.352, enterEnd: 0.44, exitStart: 0.583, exitEnd: 0.635 },
+  { enterStart: 0.682, enterEnd: 0.77, exitStart: 1.2, exitEnd: 1.3 },
 ];
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const easeOutCubic = (value: number) => 1 - Math.pow(1 - value, 3);
 const easeInCubic = (value: number) => Math.pow(value, 3);
+
+// Each card drifts at its own rate so a stage's two cards never move as one
+// block. Distinct, non-linear values also keep the six cards visually separate.
+const CARD_PARALLAX = [148, -132, 174, -156, 126, -170];
+const parallaxFor = (index: number) => CARD_PARALLAX[index % CARD_PARALLAX.length];
 
 function mixColor(
   from: [number, number, number],
@@ -204,11 +211,11 @@ function cardTransform(
   exitProgress: number,
   canExit: boolean,
   progress: number,
-  exitStart: number,
+  parallax: number,
 ) {
   const entering = easeOutCubic(clamp01(entryProgress));
   const exiting = easeInCubic(clamp01(exitProgress));
-  const travel = canExit && progress >= exitStart ? 1 - exiting : entering;
+  const travel = canExit && exitProgress > 0 ? 1 - exiting : entering;
   const opacity = entering * (1 - exiting);
 
   const startX = side === "left" ? -13 : 13;
@@ -219,10 +226,13 @@ function cardTransform(
   const x = startX + (endX - startX) * travel;
   const z = -300 + 300 * travel;
   const rotation = startRotation + (endRotation - startRotation) * travel;
+  // Anchored to the middle of the scroll so cards drift around the stage rather
+  // than accumulating an offset on stages that have no exit window.
+  const y = parallax * (progress - 0.5);
 
   return {
     opacity,
-    transform: `translate3d(${x.toFixed(3)}vw, 0, ${z.toFixed(2)}px) rotateY(${rotation.toFixed(3)}deg)`,
+    transform: `translate3d(${x.toFixed(3)}vw, ${y.toFixed(2)}px, ${z.toFixed(2)}px) rotateY(${rotation.toFixed(3)}deg)`,
   };
 }
 
@@ -231,8 +241,72 @@ export default function AboutSection() {
   const stickyRef = useRef<HTMLDivElement | null>(null);
   const dissolveRef = useRef<PortraitDissolveHandle | null>(null);
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const motionRefs = useRef<Array<HTMLDivElement | null>>([]);
   const progressRef = useRef(0);
+  const activeStageRef = useRef(0);
+  const initialisedRef = useRef(false);
+  const motionModeRef = useRef<"motion" | "static" | null>(null);
   const [activeStage, setActiveStage] = useState(0);
+
+  /**
+   * Flip-style stage change, layered on an inner wrapper so it never competes
+   * with the per-frame scroll transforms on the card shell.
+   *
+   * GSAP Flip is installed, but Flip.getState() misreads the bounds of a card
+   * nested inside the shell's perspective + rotateY transform (offsets of
+   * several hundred pixels). This is the manual FLIP path instead: capture the
+   * rest pose in JS, animate in from an offset pose, and animate the outgoing
+   * pair out, all with transforms so the scroll path never reads layout.
+   */
+  const playCardFlip = useCallback((stageIndex: number) => {
+    const incoming = [
+      motionRefs.current[stageIndex * 2],
+      motionRefs.current[stageIndex * 2 + 1],
+    ].filter((element): element is HTMLDivElement => Boolean(element));
+    if (!incoming.length) return;
+
+    const outgoing: HTMLDivElement[] = [];
+    motionRefs.current.forEach((element, index) => {
+      if (!element) return;
+      if (Math.floor(index / 2) !== stageIndex) outgoing.push(element);
+    });
+
+    gsap.killTweensOf([...incoming, ...outgoing]);
+
+    if (outgoing.length) {
+      gsap.to(outgoing, {
+        opacity: 0,
+        scale: 0.92,
+        y: (index: number) => (index % 2 === 0 ? -12 : 14),
+        duration: 0.34,
+        ease: "power2.in",
+        overwrite: true,
+        onComplete: () => gsap.set(outgoing, { clearProps: "opacity,transform" }),
+      });
+    }
+
+    const sign = stageIndex % 2 === 0 ? -1 : 1;
+    gsap.fromTo(
+      incoming,
+      {
+        opacity: 0,
+        scale: 0.84,
+        y: (index: number) => (index % 2 === 0 ? -14 : 16),
+        rotationY: sign * 12,
+      },
+      {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        rotationY: 0,
+        duration: 0.78,
+        ease: "power3.out",
+        stagger: 0.06,
+        overwrite: true,
+        clearProps: "opacity,transform",
+      },
+    );
+  }, []);
 
   const applyProgress = useCallback((progress: number) => {
     const p = clamp01(progress);
@@ -254,15 +328,36 @@ export default function AboutSection() {
       );
     }
 
-    const nextStage = p < 0.385 ? 0 : p < 0.715 ? 1 : 2;
-    setActiveStage((current) => (current === nextStage ? current : nextStage));
-
-    dissolveRef.current?.render(dissolveFor(p));
-
     const isDesktop = window.matchMedia("(min-width: 768px)").matches;
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+    const motionMode = isDesktop && !reducedMotion ? "motion" : "static";
+
+    // Leaving motion mode (resize below 768px or reduced motion turned on)
+    // must not leave a half-finished flip transform on a wrapper.
+    if (motionModeRef.current !== motionMode) {
+      motionModeRef.current = motionMode;
+      gsap.killTweensOf(motionRefs.current.filter(Boolean));
+      motionRefs.current.forEach((element) => {
+        if (!element) return;
+        element.style.removeProperty("opacity");
+        element.style.removeProperty("transform");
+      });
+    }
+
+    const nextStage = p < 0.385 ? 0 : p < 0.715 ? 1 : 2;
+    let flipStage: number | null = null;
+
+    if (activeStageRef.current !== nextStage) {
+      const wasInitialised = initialisedRef.current;
+      activeStageRef.current = nextStage;
+      setActiveStage(nextStage);
+      if (wasInitialised && motionMode === "motion") flipStage = nextStage;
+    }
+    initialisedRef.current = true;
+
+    dissolveRef.current?.render(dissolveFor(p));
 
     STAGES.forEach((stage, stageIndex) => {
       stage.cards.forEach((card, sideIndex) => {
@@ -305,7 +400,7 @@ export default function AboutSection() {
           exitProgress,
           timing.exitStart < 1,
           p,
-          exitStart,
+          parallaxFor(cardIndex),
         );
 
         shell.style.opacity = opacity.toFixed(4);
@@ -313,7 +408,11 @@ export default function AboutSection() {
         shell.style.pointerEvents = opacity > 0.35 ? "auto" : "none";
       });
     });
-  }, []);
+
+    // The entrance runs after the shells settle into their new frame so the
+    // incoming cards animate in from the pose they are actually entering from.
+    if (flipStage !== null) playCardFlip(flipStage);
+  }, [playCardFlip]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -348,6 +447,13 @@ export default function AboutSection() {
     query.addEventListener("change", handleChange);
     return () => query.removeEventListener("change", handleChange);
   }, [applyProgress]);
+
+  useEffect(
+    () => () => {
+      gsap.killTweensOf(motionRefs.current.filter(Boolean));
+    },
+    [],
+  );
 
   return (
     <section
@@ -414,47 +520,57 @@ export default function AboutSection() {
                       }}
                     >
                       <div
-                        className="about-card-float"
-                        style={
-                          {
-                            "--bob-duration": `${5.4 + cardIndex * 0.31}s`,
-                            "--bob-delay": `${-0.7 - cardIndex * 0.73}s`,
-                          } as React.CSSProperties
-                        }
+                        ref={(element) => {
+                          motionRefs.current[cardIndex] = element;
+                        }}
+                        className="about-card-motion"
                       >
                         <div
-                          className={`about-card about-card--${darkCards ? "dark" : "light"} about-card-tilt`}
-                          onPointerMove={(event) => {
-                            if (event.pointerType !== "mouse") return;
-                            const rect = event.currentTarget.getBoundingClientRect();
-                            const x = (event.clientX - rect.left) / rect.width - 0.5;
-                            const y = (event.clientY - rect.top) / rect.height - 0.5;
-                            event.currentTarget.style.setProperty(
-                              "--tilt-y",
-                              `${(x * 6).toFixed(2)}deg`,
-                            );
-                            event.currentTarget.style.setProperty(
-                              "--tilt-x",
-                              `${(-y * 6).toFixed(2)}deg`,
-                            );
-                          }}
-                          onPointerLeave={(event) => {
-                            event.currentTarget.style.setProperty("--tilt-x", "0deg");
-                            event.currentTarget.style.setProperty("--tilt-y", "0deg");
-                          }}
+                          className="about-card-float"
+                          style={
+                            {
+                              "--bob-duration": `${5.4 + cardIndex * 0.31}s`,
+                              "--bob-delay": `${-0.7 - cardIndex * 0.73}s`,
+                            } as React.CSSProperties
+                          }
                         >
-                          <span className="about-card__rule" aria-hidden="true" />
-                          <h3 className="about-card__title">{card.title}</h3>
-                          {card.body ? (
-                            <p className="about-card__body">{card.body}</p>
-                          ) : null}
-                          {card.list ? (
-                            <ul className="about-card__list">
-                              {card.list.map((item) => (
-                                <li key={item}>{item}</li>
-                              ))}
-                            </ul>
-                          ) : null}
+                          <div
+                            className={`about-card about-card--${darkCards ? "dark" : "light"} about-card-tilt`}
+                            onPointerMove={(event) => {
+                              if (event.pointerType !== "mouse") return;
+                              const rect = event.currentTarget.getBoundingClientRect();
+                              const x = (event.clientX - rect.left) / rect.width - 0.5;
+                              const y = (event.clientY - rect.top) / rect.height - 0.5;
+                              event.currentTarget.style.setProperty(
+                                "--tilt-y",
+                                `${(x * 6).toFixed(2)}deg`,
+                              );
+                              event.currentTarget.style.setProperty(
+                                "--tilt-x",
+                                `${(-y * 6).toFixed(2)}deg`,
+                              );
+                            }}
+                            onPointerLeave={(event) => {
+                              event.currentTarget.style.setProperty("--tilt-x", "0deg");
+                              event.currentTarget.style.setProperty("--tilt-y", "0deg");
+                            }}
+                          >
+                            <span className="about-card__stage" aria-hidden="true">
+                              {String(stageIndex + 1).padStart(2, "0")} / 03
+                            </span>
+                            <h3 className="about-card__title">{card.title}</h3>
+                            <span className="about-card__underline" aria-hidden="true" />
+                            {card.body ? (
+                              <p className="about-card__body">{card.body}</p>
+                            ) : null}
+                            {card.list ? (
+                              <ul className="about-card__list">
+                                {card.list.map((item) => (
+                                  <li key={item}>{item}</li>
+                                ))}
+                              </ul>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </div>

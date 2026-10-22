@@ -97,20 +97,39 @@ const FRAGMENT_SHADER = `
   }
 
   void main() {
-    vec3 colorA = texture2D(uTexA, coverUv(vUv, uResA, uCanvas)).rgb;
-    vec3 colorB = texture2D(uTexB, coverUv(vUv, uResB, uCanvas)).rgb;
-
     float progress = clamp(uProgress, 0.0, 1.0);
     float noise = fbm(vUv * vec2(3.4, 2.8) + vec2(11.3, 4.7));
     noise = clamp(noise * 1.16 - 0.08, 0.0, 1.0);
 
+    float transitionActive = step(0.001, progress) * step(progress, 0.999);
+    float warp = sin(progress * 3.14159265) * transitionActive;
+
+    // Vertical stretch/smear while the outgoing portrait breaks apart.
+    vec2 warpA = vec2(0.0, (noise - 0.5) * 0.24 * warp);
+    vec2 warpB = vec2(0.0, (noise - 0.5) * 0.09 * warp);
+
+    vec3 colorA = texture2D(uTexA, coverUv(vUv + warpA, uResA, uCanvas)).rgb;
+    vec3 colorB = texture2D(uTexB, coverUv(vUv + warpB, uResB, uCanvas)).rgb;
+
+    float edgeBand = smoothstep(0.13, 0.0, abs(noise - progress));
+    float smearAmount = edgeBand * transitionActive * (0.012 + 0.05 * progress);
+    vec3 smearedA = vec3(0.0);
+    for (int i = 0; i < 5; i++) {
+      float offset = (float(i) / 4.0 - 0.5) * smearAmount;
+      smearedA += texture2D(
+        uTexA,
+        coverUv(vUv + warpA + vec2(0.0, offset), uResA, uCanvas)
+      ).rgb;
+    }
+    smearedA /= 5.0;
+    colorA = mix(colorA, smearedA, edgeBand * transitionActive);
+
     vec3 color = noise < progress ? colorB : colorA;
 
-    float edge = smoothstep(0.038, 0.0, abs(noise - progress));
-    float transitionActive = step(0.001, progress) * step(progress, 0.999);
+    float edge = smoothstep(0.03, 0.0, abs(noise - progress));
     edge *= transitionActive;
-    color = mix(color, uEdgeColor, edge * 0.58);
-    color += uEdgeColor * pow(edge, 2.0) * 0.2;
+    color = mix(color, uEdgeColor, edge * 0.64);
+    color += uEdgeColor * pow(edge, 2.0) * 0.26;
 
     gl_FragColor = vec4(color, 1.0);
   }
@@ -253,7 +272,9 @@ export const PortraitDissolve = forwardRef<
       if (state.from === state.to) opacity = index === state.from ? 1 : 0;
       image.style.opacity = opacity.toFixed(4);
       image.style.filter = `blur(${(progress * (1 - progress) * 7).toFixed(3)}px)`;
-      image.style.transform = `scale(${(index === state.from ? 1 + progress * 0.018 : 1.018 - progress * 0.018).toFixed(4)})`;
+      const drift = progress * (1 - progress) * 14;
+      const direction = index === state.from ? -drift : drift;
+      image.style.transform = `translate3d(0, ${direction.toFixed(3)}px, 0) scale(${(index === state.from ? 1 + progress * 0.018 : 1.018 - progress * 0.018).toFixed(4)})`;
     });
   }, []);
 
