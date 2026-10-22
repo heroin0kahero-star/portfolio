@@ -1,11 +1,13 @@
 /**
  * @license SPDX-License-Identifier: Apache-2.0
  *
- * "How we work together" — a white, pinned process section with a single
- * hand-built S-curve. The path draws with scroll (normalized stroke-dashoffset),
- * four nodes appear as the line reaches them, and each stage's copy slides in
- * beside its node. Desktop pins via a sticky frame; mobile turns the same path
- * vertical; reduced motion shows the finished drawing without pinning.
+ * "How we work together" — a pinned white section with a Three.js camera ride
+ * along a Catmull-Rom path. The same path is drawn as a tube that grows with
+ * scroll, four spheres mark the stages, and DOM panels are projected to the
+ * spheres so the copy stays crisp and selectable.
+ *
+ * Three.js is loaded lazily once the section approaches the viewport. The
+ * render loop pauses off-screen and everything is disposed on unmount.
  */
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -40,42 +42,50 @@ const STEPS: ProcessStep[] = [
   },
 ];
 
+/** Arc-length positions of the four stage markers on the curve. */
+const STAGE_T = [0.09, 0.36, 0.63, 0.9] as const;
+
 /**
- * Node positions as percentages of the 1440 x 760 path box. The path is drawn
- * through these exact points, so the dots always sit on the line.
+ * The camera path, authored in code as a shallow S that recedes through space.
+ * The camera rides slightly in front of it (positive Z offset) so the drawn
+ * line and the upcoming stage markers stay visible ahead of the lens.
  */
-const NODES = [
-  { x: 14, y: 72 },
-  { x: 39, y: 34 },
-  { x: 64, y: 70 },
-  { x: 87, y: 30 },
+const PATH_POINTS = [
+  [-5.2, 0.3, 2.4],
+  [-4.1, -0.55, 0.6],
+  [-2.5, 0.7, -1.6],
+  [-0.6, -0.65, -3.8],
+  [1.2, 0.65, -6.1],
+  [3.0, -0.4, -8.4],
+  [4.6, 0.55, -10.8],
+  [3.6, 0.2, -13.2],
 ] as const;
 
-/** Arc-length fractions (of pathLength=1) where each node is reached. */
-const DESKTOP_REACH = [0.11, 0.38, 0.64, 0.9] as const;
-
-const DESKTOP_PATH =
-  "M 50 547.2 L 201.6 547.2 " +
-  "C 321.6 547.2 441.6 258.4 561.6 258.4 " +
-  "C 681.6 258.4 801.6 532 921.6 532 " +
-  "C 1041.6 532 1132.8 228 1252.8 228 " +
-  "L 1390 228";
-
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-const prefersReducedMotion = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function smoothstep(edge0: number, edge1: number, value: number) {
+  const t = clamp01((value - edge0) / Math.max(0.0001, edge1 - edge0));
+  return t * t * (3 - 2 * t);
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
 
 export function TimelineAnimation({ className = "" }: { className?: string }) {
   const sectionRef = useRef<HTMLElement | null>(null);
-  const canvasRef = useRef<HTMLDivElement | null>(null);
-  const pathRef = useRef<SVGPathElement | null>(null);
-  const mobilePathRef = useRef<SVGPathElement | null>(null);
-  const thresholdsRef = useRef<number[]>([...DESKTOP_REACH]);
-  const reachedRef = useRef(0);
+  const canvasWrapRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const panelRefs = useRef<Array<HTMLElement | null>>([]);
 
   const [staticMode, setStaticMode] = useState(prefersReducedMotion);
-  const [reached, setReached] = useState(0);
+  const [fallback, setFallback] = useState(false);
+  const [reached, setReached] = useState(() =>
+    prefersReducedMotion() ? STEPS.length : 0,
+  );
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -85,149 +95,359 @@ export function TimelineAnimation({ className = "" }: { className?: string }) {
   }, []);
 
   useEffect(() => {
-    if (staticMode) {
-      reachedRef.current = STEPS.length;
-      setReached(STEPS.length);
-      return;
-    }
+    if (staticMode) setReached(STEPS.length);
+  }, [staticMode]);
 
+  const isStatic = staticMode || fallback;
+
+  useEffect(() => {
     const section = sectionRef.current;
     const canvas = canvasRef.current;
-    if (!section || !canvas) return;
+    const wrap = canvasWrapRef.current;
+    if (!section || !canvas || !wrap) return;
 
     let cancelled = false;
     let started = false;
-    let trigger: { kill: () => void; progress: number } | null = null;
-    let observer: IntersectionObserver | null = null;
-    let cleanupBreakpoint: (() => void) | null = null;
-    let measureFrame = 0;
-
-    const isDesktop = () => window.matchMedia("(min-width: 768px)").matches;
-
-    /**
-     * Mobile thresholds come from the actual dot positions, so uneven copy
-     * lengths still light each node exactly when the line reaches it.
-     */
-    const measure = () => {
-      if (isDesktop()) {
-        thresholdsRef.current = [...DESKTOP_REACH];
-        return;
-      }
-      const box = canvas.getBoundingClientRect();
-      const height = Math.max(1, box.height);
-      const stages = Array.from(
-        canvas.querySelectorAll<HTMLElement>(".process-stage"),
-      );
-      thresholdsRef.current = stages.map((stage) =>
-        clamp01((stage.getBoundingClientRect().top - box.top + 12) / height),
-      );
-    };
-
-    const apply = (scrollProgress: number) => {
-      // Leave a short beat at both ends so the line starts and finishes inside
-      // the pin rather than snapping on the first/last frame.
-      const draw = clamp01((clamp01(scrollProgress) - 0.03) / 0.9);
-      if (pathRef.current) {
-        pathRef.current.style.strokeDashoffset = (1 - draw).toFixed(4);
-      }
-      if (mobilePathRef.current) {
-        mobilePathRef.current.style.strokeDashoffset = (1 - draw).toFixed(4);
-      }
-
-      const count = thresholdsRef.current.filter(
-        (threshold) => draw >= threshold - 0.005,
-      ).length;
-      if (count !== reachedRef.current) {
-        reachedRef.current = count;
-        setReached(count);
-      }
-    };
+    let disposeScene: (() => void) | null = null;
+    let lazyObserver: IntersectionObserver | null = null;
 
     const start = async () => {
       if (cancelled || started) return;
       started = true;
+      lazyObserver?.disconnect();
+      lazyObserver = null;
 
-      let gsap: typeof import("gsap")["default"];
-      let ScrollTrigger: typeof import("gsap/ScrollTrigger")["ScrollTrigger"];
+      let THREE: typeof import("three");
       try {
-        [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
-          import("gsap"),
-          import("gsap/ScrollTrigger"),
-        ]);
+        THREE = await import("three");
       } catch {
-        // If the motion chunk cannot load, leave the section in its static,
-        // fully drawn state rather than a blank white panel.
-        if (!cancelled) setStaticMode(true);
+        if (!cancelled) setFallback(true);
         return;
       }
       if (cancelled) return;
 
-      gsap.registerPlugin(ScrollTrigger);
-
-      const build = () => {
-        if (cancelled) return;
-        trigger?.kill();
-        measure();
-
-        const desktop = isDesktop();
-        trigger = ScrollTrigger.create({
-          trigger: desktop ? section : canvas,
-          start: desktop ? "top top" : "top 78%",
-          end: desktop ? "bottom bottom" : "bottom 82%",
-          onUpdate: (self) => apply(self.progress),
-          onRefresh: () => {
-            measure();
-            if (trigger) apply(trigger.progress);
-          },
+      try {
+        const renderer = new THREE.WebGLRenderer({
+          canvas,
+          antialias: true,
+          alpha: true,
+          powerPreference: "high-performance",
         });
-        apply(trigger.progress);
-      };
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+        renderer.setClearColor(0xffffff, 0);
 
-      const breakpoint = window.matchMedia("(min-width: 768px)");
-      breakpoint.addEventListener("change", build);
-      cleanupBreakpoint = () => breakpoint.removeEventListener("change", build);
-      build();
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 200);
 
-      document.fonts?.ready
-        .then(() => {
-          if (cancelled) return;
-          measure();
-          build();
-        })
-        .catch(() => {});
+        const points = PATH_POINTS.map(
+          ([x, y, z]) => new THREE.Vector3(x, y, z),
+        );
+        const curve = new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.5);
+
+        // A lighter tube on phones keeps the segment count (and the frame cost)
+        // down without changing the shape of the path.
+        const startsDesktop = window.matchMedia("(min-width: 768px)").matches;
+        const tubeSegments = startsDesktop ? 300 : 150;
+        const radialSegments = startsDesktop ? 8 : 5;
+        const tubeGeometry = new THREE.TubeGeometry(
+          curve,
+          tubeSegments,
+          0.024,
+          radialSegments,
+          false,
+        );
+        const tubeMaterial = new THREE.MeshBasicMaterial({ color: 0x111111 });
+        const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+        scene.add(tube);
+
+        const totalIndexCount = tubeGeometry.index?.count ?? 0;
+        const indicesPerSegment = radialSegments * 6;
+
+        const spheres = STAGE_T.map((stage) => {
+          const geometry = new THREE.SphereGeometry(0.085, 18, 18);
+          const material = new THREE.MeshBasicMaterial({
+            color: 0x111111,
+            transparent: true,
+            opacity: 0.18,
+            depthWrite: false,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.copy(curve.getPointAt(stage));
+          scene.add(mesh);
+          return mesh;
+        });
+
+        let desktop = startsDesktop;
+        let progressTarget = 0;
+        let progressSmoothed = 0;
+        let reachedCount = 0;
+        let panelWidths: number[] = [];
+
+        const clearPanelStyles = () => {
+          panelRefs.current.forEach((panel) => {
+            if (!panel) return;
+            panel.style.opacity = "";
+            panel.style.transform = "";
+            panel.style.visibility = "";
+          });
+        };
+
+        const renderStaticScene = () => {
+          const box = new THREE.Box3().setFromPoints(points);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          camera.position.set(
+            center.x,
+            center.y + Math.max(2.6, size.y * 0.9),
+            center.z + Math.max(15, size.z * 1.15),
+          );
+          camera.lookAt(center);
+
+          tubeGeometry.setDrawRange(0, totalIndexCount);
+          spheres.forEach((sphere) => {
+            sphere.material.opacity = 1;
+            sphere.scale.setScalar(1);
+          });
+
+          renderer.render(scene, camera);
+        };
+
+        const placePanels = (progress: number) => {
+          const width = wrap.clientWidth;
+          const height = wrap.clientHeight;
+          const vector = new THREE.Vector3();
+
+          spheres.forEach((sphere, index) => {
+            const panel = panelRefs.current[index];
+            if (!panel) return;
+
+            const stage = STAGE_T[index];
+            // The first panel is already on screen when the section pins.
+            const fadeIn =
+              index === 0
+                ? 1
+                : smoothstep(stage - 0.13, stage - 0.05, progress);
+            const fadeOut = 1 - smoothstep(stage + 0.06, stage + 0.15, progress);
+            const opacity = fadeIn * fadeOut;
+
+            // Phones keep the panels in a fixed stack under the canvas: only
+            // opacity and a short vertical slide are written per frame.
+            if (!desktop) {
+              panel.style.opacity = opacity.toFixed(3);
+              panel.style.visibility = opacity > 0.005 ? "visible" : "hidden";
+              panel.style.transform = `translate3d(0, ${((1 - fadeIn) * 14).toFixed(1)}px, 0)`;
+              return;
+            }
+
+            vector.copy(sphere.position).project(camera);
+            const inFront = vector.z < 1;
+            const screenX = (vector.x * 0.5 + 0.5) * width;
+            const screenY = (-vector.y * 0.5 + 0.5) * height;
+
+            const panelWidth = panelWidths[index] || 300;
+            const offset = 92;
+            let x = screenX + offset;
+            if (x + panelWidth > width - 24) {
+              x = screenX - panelWidth - offset;
+            }
+            x = Math.max(24, Math.min(x, width - panelWidth - 24));
+            const y = Math.max(120, Math.min(screenY, height - 120));
+
+            const visibleOpacity = inFront ? opacity : 0;
+            panel.style.opacity = visibleOpacity.toFixed(3);
+            panel.style.visibility =
+              visibleOpacity > 0.005 ? "visible" : "hidden";
+            panel.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translateY(-50%)`;
+          });
+        };
+
+        const updateScene = (progress: number) => {
+          const t = clamp01(progress);
+          const position = curve.getPointAt(t);
+          camera.position.set(
+            position.x + 0.8,
+            position.y + 1.45,
+            position.z + 6.4,
+          );
+          const ahead = curve.getPointAt(Math.min(1, t + 0.055));
+          camera.lookAt(ahead.x, ahead.y + 0.1, ahead.z);
+
+          const drawnSegments = Math.max(
+            0,
+            Math.min(tubeSegments, Math.floor(tubeSegments * t)),
+          );
+          tubeGeometry.setDrawRange(
+            0,
+            Math.min(totalIndexCount, drawnSegments * indicesPerSegment),
+          );
+
+          spheres.forEach((sphere, index) => {
+            const lit = t >= STAGE_T[index] - 0.005;
+            const target = lit ? 1 : 0.18;
+            sphere.material.opacity +=
+              (target - sphere.material.opacity) * 0.16;
+            const scale = lit ? 1.15 : 0.9;
+            sphere.scale.x += (scale - sphere.scale.x) * 0.16;
+            sphere.scale.y += (scale - sphere.scale.y) * 0.16;
+            sphere.scale.z += (scale - sphere.scale.z) * 0.16;
+          });
+
+          placePanels(t);
+
+          const nextReached = STAGE_T.filter((stage) => t >= stage - 0.005).length;
+          if (nextReached !== reachedCount) {
+            reachedCount = nextReached;
+            setReached(nextReached);
+          }
+        };
+
+        const resize = () => {
+          const width = Math.max(1, wrap.clientWidth);
+          const height = Math.max(1, wrap.clientHeight);
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+          desktop = window.matchMedia("(min-width: 768px)").matches;
+          panelWidths = panelRefs.current.map(
+            (panel) => panel?.offsetWidth ?? 300,
+          );
+
+          if (!desktop) clearPanelStyles();
+          if (staticMode) renderStaticScene();
+        };
+
+        resize();
+        window.addEventListener("resize", resize);
+
+        if (staticMode) {
+          renderStaticScene();
+        } else {
+          let gsapModule: typeof import("gsap")["default"];
+          let ScrollTriggerModule: typeof import("gsap/ScrollTrigger")["ScrollTrigger"];
+          try {
+            [{ default: gsapModule }, { ScrollTrigger: ScrollTriggerModule }] =
+              await Promise.all([import("gsap"), import("gsap/ScrollTrigger")]);
+          } catch {
+            setFallback(true);
+            window.removeEventListener("resize", resize);
+            renderer.dispose();
+            return;
+          }
+          if (cancelled) {
+            window.removeEventListener("resize", resize);
+            renderer.dispose();
+            return;
+          }
+
+          gsapModule.registerPlugin(ScrollTriggerModule);
+          ScrollTriggerModule.create({
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+              progressTarget = self.progress;
+            },
+            onRefresh: (self) => {
+              progressTarget = self.progress;
+            },
+          });
+
+          let previousTime = performance.now();
+          let frame = 0;
+          let running = false;
+
+          const tick = () => {
+            frame = requestAnimationFrame(tick);
+            const now = performance.now();
+            const delta = Math.min((now - previousTime) / 1000, 0.05);
+            previousTime = now;
+            const ease = 1 - Math.exp(-8 * delta);
+            progressSmoothed += (progressTarget - progressSmoothed) * ease;
+            if (Math.abs(progressTarget - progressSmoothed) < 0.0001) {
+              progressSmoothed = progressTarget;
+            }
+            updateScene(progressSmoothed);
+            renderer.render(scene, camera);
+          };
+
+          const startLoop = () => {
+            if (running || cancelled) return;
+            running = true;
+            previousTime = performance.now();
+            frame = requestAnimationFrame(tick);
+          };
+
+          const stopLoop = () => {
+            running = false;
+            cancelAnimationFrame(frame);
+          };
+
+          const visibilityObserver = new IntersectionObserver(
+            (entries) => {
+              if (entries.some((entry) => entry.isIntersecting)) startLoop();
+              else stopLoop();
+            },
+            { rootMargin: "20% 0px 20% 0px" },
+          );
+          visibilityObserver.observe(section);
+
+          updateScene(0);
+          renderer.render(scene, camera);
+          startLoop();
+
+          disposeScene = () => {
+            stopLoop();
+            visibilityObserver.disconnect();
+            window.removeEventListener("resize", resize);
+            ScrollTriggerModule.getAll().forEach((instance) => {
+              if (instance.trigger === section) instance.kill();
+            });
+            tubeGeometry.dispose();
+            tubeMaterial.dispose();
+            spheres.forEach((sphere) => {
+              sphere.geometry.dispose();
+              sphere.material.dispose();
+            });
+            renderer.dispose();
+            renderer.forceContextLoss();
+          };
+
+          return;
+        }
+
+        disposeScene = () => {
+          window.removeEventListener("resize", resize);
+          tubeGeometry.dispose();
+          tubeMaterial.dispose();
+          spheres.forEach((sphere) => {
+            sphere.geometry.dispose();
+            sphere.material.dispose();
+          });
+          renderer.dispose();
+          renderer.forceContextLoss();
+        };
+      } catch {
+        if (!cancelled) setFallback(true);
+      }
     };
 
     if ("IntersectionObserver" in window) {
-      observer = new IntersectionObserver(
+      lazyObserver = new IntersectionObserver(
         (entries) => {
           if (!entries.some((entry) => entry.isIntersecting)) return;
-          observer?.disconnect();
-          observer = null;
           void start();
         },
-        { rootMargin: "100% 0px 100% 0px" },
+        { rootMargin: "80% 0px 80% 0px" },
       );
-      observer.observe(section);
+      lazyObserver.observe(section);
     } else {
       void start();
     }
 
-    const onResize = () => {
-      cancelAnimationFrame(measureFrame);
-      measureFrame = requestAnimationFrame(() => {
-        measure();
-        if (trigger) apply(trigger.progress);
-      });
-    };
-    window.addEventListener("resize", onResize);
-
     return () => {
       cancelled = true;
-      observer?.disconnect();
-      cancelAnimationFrame(measureFrame);
-      window.removeEventListener("resize", onResize);
-      cleanupBreakpoint?.();
-      trigger?.kill();
+      lazyObserver?.disconnect();
+      disposeScene?.();
     };
   }, [staticMode]);
 
@@ -236,11 +456,11 @@ export function TimelineAnimation({ className = "" }: { className?: string }) {
       id="process"
       ref={sectionRef}
       aria-labelledby="process-heading"
-      data-static={staticMode ? "true" : undefined}
-      className={`process-section ${className}`.trim()}
+      data-static={isStatic ? "true" : undefined}
+      className={`process-section process3d-section ${className}`.trim()}
     >
-      <div className="process-frame">
-        <header className="process-header">
+      <div className="process3d-pin">
+        <header className="process3d-header">
           <div className="process-header__lockup">
             <span className="process-eyebrow">My Process</span>
             <ScrollFilterHeading
@@ -259,83 +479,31 @@ export function TimelineAnimation({ className = "" }: { className?: string }) {
           </div>
         </header>
 
-        <div ref={canvasRef} className="process-canvas">
-          <svg
-            className="process-line process-line--desktop"
-            viewBox="0 0 1440 760"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path
-              ref={pathRef}
-              d={DESKTOP_PATH}
-              pathLength={1}
-              fill="none"
-              stroke="#111111"
-              strokeWidth={2}
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-
-          <svg
-            className="process-line process-line--mobile"
-            viewBox="0 0 2 100"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path
-              ref={mobilePathRef}
-              d="M 1 0 V 100"
-              pathLength={1}
-              fill="none"
-              stroke="#111111"
-              strokeWidth={2}
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-
-          <div className="process-nodes" aria-hidden="true">
-            {NODES.map((node, index) => (
-              <span
-                key={STEPS[index].id}
-                className="process-node"
-                data-reached={index < reached}
-                style={
-                  {
-                    "--x": `${node.x}%`,
-                    "--y": `${node.y}%`,
-                  } as CSSProperties
-                }
-              />
-            ))}
+        <div className="process3d-stage">
+          <div ref={canvasWrapRef} className="process3d-canvas" aria-hidden="true">
+            <canvas ref={canvasRef} className="process3d-canvas__surface" />
           </div>
 
-          <div className="process-stages">
+          <div className="process3d-panels">
             {STEPS.map((step, index) => (
               <article
                 key={step.id}
-                className="process-stage"
-                data-side={index % 2 === 0 ? "above" : "below"}
-                data-reached={index < reached}
+                ref={(element) => {
+                  panelRefs.current[index] = element;
+                }}
+                className="process3d-panel"
                 style={
                   {
-                    "--x": `${NODES[index].x}%`,
-                    "--y": `${NODES[index].y}%`,
+                    "--stage-index": index,
                   } as CSSProperties
                 }
               >
-                <div className="process-stage__copy">
-                  <span className="process-stage__index">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="process-stage__title">{step.title}</h3>
-                  <span className="process-stage__rule" aria-hidden="true" />
-                  <p className="process-stage__body">{step.description}</p>
-                </div>
+                <span className="process3d-panel__index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="process3d-panel__title">{step.title}</h3>
+                <span className="process3d-panel__rule" aria-hidden="true" />
+                <p className="process3d-panel__body">{step.description}</p>
               </article>
             ))}
           </div>

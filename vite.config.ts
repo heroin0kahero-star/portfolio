@@ -13,6 +13,9 @@ export default defineConfig(() => {
     },
     build: {
       sourcemap: false,
+      // Three.js is lazy-loaded into its own chunk and is naturally large; the
+      // default 500 kB warning would fire for a chunk that never blocks the hero.
+      chunkSizeWarningLimit: 900,
       esbuild: {
         drop: ['console', 'debugger'],
       },

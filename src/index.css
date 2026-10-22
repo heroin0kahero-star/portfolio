@@ -655,7 +655,7 @@ html, body {
 }
 
 /* --------------------------------------------------------------------------
-   PROCESS — white, pinned, S-curve drawn by scroll
+   PROCESS — white, pinned Three.js camera ride through the four stages
    -------------------------------------------------------------------------- */
 
 .process-section {
@@ -664,20 +664,39 @@ html, body {
   color: #111111;
 }
 
-.process-frame {
+.process3d-section {
   position: relative;
-  overflow: hidden;
-  padding: 124px 24px 96px;
+  height: 370vh;
+  min-height: 2300px;
 }
 
-.process-header {
-  display: block;
-  margin-bottom: 48px;
+.process3d-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.process3d-header {
+  position: absolute;
+  top: 5.5svh;
+  right: 20px;
+  left: 20px;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0;
+}
+
+.process-header__lockup {
+  max-width: min(64vw, 560px);
 }
 
 .process-eyebrow {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   font-family: var(--font-mono, "Space Grotesk", monospace);
   font-size: 10px;
   letter-spacing: 0.34em;
@@ -690,14 +709,14 @@ html, body {
   font-family: var(--font-heading);
   font-style: italic;
   font-weight: 400;
-  font-size: clamp(2.6rem, 9vw, 4.25rem);
+  font-size: clamp(2rem, 8vw, 4.25rem);
   line-height: 0.94;
   letter-spacing: -0.035em;
   color: #111111;
 }
 
 .process-counter {
-  margin-top: 18px;
+  margin-top: 4px;
   font-family: var(--font-mono, "Space Grotesk", monospace);
   font-size: 11px;
   line-height: 1;
@@ -711,271 +730,254 @@ html, body {
   color: rgba(17, 17, 17, 0.62);
 }
 
-.process-canvas {
-  position: relative;
-}
-
-.process-line {
-  color: #111111;
-}
-
-.process-line path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-}
-
-.process-line--desktop {
-  display: none;
-}
-
-.process-line--mobile {
+.process3d-stage {
   position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 16px;
+  inset: 0;
+}
+
+.process3d-canvas {
+  position: absolute;
+  top: 25svh;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  height: 42svh;
+  pointer-events: none;
+}
+
+.process3d-canvas__surface {
   display: block;
-  width: 2px;
+  width: 100%;
+  height: 100%;
 }
 
-.process-nodes {
-  display: none;
-}
-
-.process-stages {
-  position: relative;
-}
-
-.process-stage {
-  position: relative;
-  padding-left: 48px;
-}
-
-.process-stage + .process-stage {
-  margin-top: 44px;
-}
-
-.process-stage::before {
-  content: "";
+.process3d-panels {
   position: absolute;
-  top: 12px;
-  left: 9px;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #111111;
-  border-radius: 9999px;
-  background: #ffffff;
+  top: 68svh;
+  right: 20px;
+  left: 20px;
+  z-index: 2;
+  height: 28svh;
+  pointer-events: none;
+}
+
+.process3d-panel {
+  position: absolute;
+  inset: 0;
   opacity: 0;
-  transform: scale(0.4);
-  transition: opacity 420ms ease, transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+  visibility: hidden;
+  pointer-events: none;
+  border-top: 1px solid rgba(17, 17, 17, 0.18);
+  padding-top: 14px;
 }
 
-.process-stage[data-reached="true"]::before {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.process-stage__copy {
-  opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 700ms ease, transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.process-stage[data-reached="true"] .process-stage__copy {
-  opacity: 1;
-  transform: none;
-}
-
-.process-stage__index {
+.process3d-panel__index {
   display: block;
   font-family: var(--font-mono, "Space Grotesk", monospace);
   font-size: 10px;
   line-height: 1;
   letter-spacing: 0.24em;
-  color: rgba(17, 17, 17, 0.62);
+  color: rgba(17, 17, 17, 0.55);
 }
 
-.process-stage__title {
+.process3d-panel__title {
   margin: 8px 0 0;
   font-family: var(--font-heading);
   font-style: italic;
   font-weight: 400;
-  font-size: 1.35rem;
+  font-size: clamp(1.35rem, 5.5vw, 1.8rem);
   line-height: 1.02;
   letter-spacing: -0.02em;
 }
 
-.process-stage__rule {
+.process3d-panel__rule {
   display: block;
   width: 24px;
   height: 1px;
-  margin-top: 12px;
+  margin-top: 10px;
   background: currentColor;
   opacity: 0.35;
 }
 
-.process-stage__body {
-  margin: 10px 0 0;
+.process3d-panel__body {
+  margin: 8px 0 0;
   max-width: 34ch;
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 400;
-  line-height: 1.55;
-  color: rgba(17, 17, 17, 0.62);
+  line-height: 1.5;
+  color: rgba(17, 17, 17, 0.66);
 }
 
 @media (min-width: 768px) {
-  .process-section {
-    height: 340vh;
-    min-height: 2300px;
-  }
-
-  .process-frame {
-    position: sticky;
-    top: 0;
-    height: 100svh;
-    padding: 0;
-  }
-
-  .process-header {
-    position: absolute;
-    top: 15svh;
+  .process3d-header {
+    top: 10svh;
     right: 5.5vw;
     left: 5.5vw;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
     gap: 32px;
-    margin: 0;
   }
 
-  .process-counter {
-    margin-top: 4px;
+  .process-header__lockup {
+    max-width: 620px;
   }
 
-  .process-canvas {
-    position: absolute;
-    inset: 27svh 0 4svh 0;
+  .process3d-canvas {
+    inset: 0;
+    height: auto;
   }
 
-  .process-line--desktop {
+  .process3d-panels {
     position: absolute;
     inset: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
+    height: auto;
   }
 
-  .process-line--mobile {
-    display: none;
-  }
-
-  .process-nodes {
+  .process3d-panel {
     position: absolute;
-    inset: 0;
-    display: block;
-    pointer-events: none;
+    inset: auto;
+    top: 0;
+    left: 0;
+    width: clamp(260px, 23vw, 340px);
+    padding: 18px 20px 20px;
+    border: 1px solid rgba(17, 17, 17, 0.14);
+    border-top: 1px solid rgba(17, 17, 17, 0.14);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 24px 70px -38px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    will-change: transform, opacity;
   }
 
-  .process-node {
-    position: absolute;
-    top: var(--y);
-    left: var(--x);
-    width: 9px;
-    height: 9px;
-    margin: -4.5px 0 0 -4.5px;
-    border-radius: 9999px;
-    background: #111111;
-    opacity: 0;
-    transform: scale(0.2);
-    transition: opacity 420ms ease, transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .process-node::after {
-    content: "";
-    position: absolute;
-    inset: -7px;
-    border: 1px solid rgba(17, 17, 17, 0.22);
-    border-radius: 9999px;
-  }
-
-  .process-node[data-reached="true"] {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .process-stages {
-    position: absolute;
-    inset: 0;
-  }
-
-  .process-stage {
-    position: absolute;
-    top: var(--y);
-    left: var(--x);
-    /* 170px keeps four columns clear of each other at 768px; 18vw lets them
-       grow to a readable measure on larger screens. */
-    width: clamp(170px, 18vw, 290px);
-    padding-left: 0;
-  }
-
-  .process-stage + .process-stage {
-    margin-top: 0;
-  }
-
-  .process-stage[data-side="above"] {
-    transform: translate(-50%, -100%);
-    padding-bottom: 28px;
-  }
-
-  .process-stage[data-side="below"] {
-    transform: translate(-50%, 0);
-    padding-top: 28px;
-  }
-
-  .process-stage::before {
-    display: none;
-  }
-
-  .process-stage__copy {
-    transform: translateX(30px);
-  }
-
-  .process-stage__title {
+  .process3d-panel__title {
     font-size: clamp(1.5rem, 2.2vw, 2rem);
   }
 }
 
-/* Reduced motion (and the load-failure fallback): a finished, static drawing. */
-.process-section[data-static="true"] .process-line path {
-  stroke-dashoffset: 0 !important;
+/* A finished, static composition when motion is reduced or WebGL is absent. */
+.process3d-section[data-static="true"] {
+  height: auto;
+  min-height: 0;
 }
 
-.process-section[data-static="true"] .process-stage__copy {
-  opacity: 1;
-  transform: none;
-  transition: none;
+.process3d-section[data-static="true"] .process3d-pin {
+  position: relative;
+  height: auto;
+  overflow: visible;
 }
 
-.process-section[data-static="true"] .process-stage::before,
-.process-section[data-static="true"] .process-node {
-  opacity: 1;
-  transform: scale(1);
+.process3d-section[data-static="true"] .process3d-header {
+  position: relative;
+  top: auto;
+  right: auto;
+  left: auto;
+  padding: 112px 24px 32px;
 }
 
-@media (min-width: 768px) {
-  .process-section[data-static="true"] {
-    height: auto;
-    min-height: 100svh;
+.process3d-section[data-static="true"] .process3d-stage {
+  position: relative;
+  inset: auto;
+}
+
+.process3d-section[data-static="true"] .process3d-canvas {
+  position: relative;
+  inset: auto;
+  height: clamp(280px, 52svh, 560px);
+}
+
+.process3d-section[data-static="true"] .process3d-panels {
+  position: relative;
+  inset: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: auto;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 24px 88px;
+}
+
+.process3d-section[data-static="true"] .process3d-panel {
+  position: relative;
+  inset: auto;
+  width: auto;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  border: 0;
+  border-top: 1px solid rgba(17, 17, 17, 0.18);
+  border-radius: 0;
+  padding: 14px 0 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* --------------------------------------------------------------------------
+   CAPABILITIES — continuous, calm drift for the bento tiles
+   -------------------------------------------------------------------------- */
+
+.bento-grid:hover .bento-drift {
+  animation-play-state: paused;
+}
+
+.bento-drift {
+  --drift-x: 5px;
+  --drift-y: -7px;
+  animation: capability-drift var(--drift-duration, 44s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+  will-change: transform;
+}
+
+.bento-drift:nth-child(2) {
+  --drift-duration: 52s;
+  --drift-delay: -13s;
+  --drift-x: 7px;
+  --drift-y: 6px;
+}
+
+.bento-drift:nth-child(3) {
+  --drift-duration: 47s;
+  --drift-delay: -27s;
+  --drift-x: 4px;
+  --drift-y: -9px;
+}
+
+.bento-drift:nth-child(4) {
+  --drift-duration: 56s;
+  --drift-delay: -7s;
+  --drift-x: 6px;
+  --drift-y: 8px;
+}
+
+.bento-drift:nth-child(5) {
+  --drift-duration: 49s;
+  --drift-delay: -21s;
+  --drift-x: 5px;
+  --drift-y: -6px;
+}
+
+@keyframes capability-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
   }
-
-  .process-section[data-static="true"] .process-frame {
-    position: relative;
-    height: 100svh;
+  25% {
+    transform: translate3d(var(--drift-x), var(--drift-y), 0);
   }
+  50% {
+    transform: translate3d(0, calc(var(--drift-y) * -0.45), 0);
+  }
+  75% {
+    transform: translate3d(calc(var(--drift-x) * -1), var(--drift-y), 0);
+  }
+}
 
-  .process-section[data-static="true"] .process-stage__copy {
+@media (prefers-reduced-motion: reduce) {
+  .bento-drift {
+    animation: none;
     transform: none;
+    will-change: auto;
   }
 }
-
-

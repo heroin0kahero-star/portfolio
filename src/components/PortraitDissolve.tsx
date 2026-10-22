@@ -60,6 +60,7 @@ function blindsProgress(
   }
 
   const target = layer + 1;
+  if (state.from === state.to) return target <= state.from ? 1 : 0;
   if (state.to === target) return clamp01(state.progress);
   if (state.from >= target) return 1;
   return 0;

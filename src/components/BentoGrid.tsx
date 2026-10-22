@@ -73,29 +73,33 @@ export function BentoGrid({ className = "" }: { className?: string }) {
 
   return (
     <div
-      className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${className}`}
+      className={`bento-grid grid grid-cols-1 md:grid-cols-3 gap-6 ${className}`}
     >
       {TILES.map((tile) => {
         const Icon = tile.icon;
         const colClass = tile.span.cols === 2 ? "md:col-span-2" : "md:col-span-1";
         const rowClass = tile.span.rows === 2 ? "md:row-span-2" : "md:row-span-1";
         return (
-          <motion.div
+          <div
             key={tile.id}
-            whileHover={reducedMotion ? {} : { y: -4 }}
-            className={`col-span-1 ${colClass} ${rowClass} rounded-[1.25rem] border border-white/5 bg-white/[0.02] p-6 md:p-8 flex flex-col gap-3 group transition-all hover:bg-white/[0.03] hover:border-white/20`}
-            style={{ background: tile.gradient }}
+            className={`bento-drift col-span-1 ${colClass} ${rowClass}`}
           >
-            <div className="h-10 w-10 rounded-xl bg-white/[0.08] flex items-center justify-center text-indigo-400 group-hover:text-indigo-300 transition-colors">
-              <Icon className="h-5 w-5" strokeWidth={1.7} />
-            </div>
-            <h3 className="font-heading italic text-xl md:text-2xl text-white leading-tight">
-              {tile.title}
-            </h3>
-            <p className="text-sm text-white/65 font-body font-light leading-relaxed">
-              {tile.description}
-            </p>
-          </motion.div>
+            <motion.div
+              whileHover={reducedMotion ? {} : { y: -4 }}
+              className="h-full rounded-[1.25rem] border border-white/5 bg-white/[0.02] p-6 md:p-8 flex flex-col gap-3 group transition-all hover:bg-white/[0.03] hover:border-white/20"
+              style={{ background: tile.gradient }}
+            >
+              <div className="h-10 w-10 rounded-xl bg-white/[0.08] flex items-center justify-center text-indigo-400 group-hover:text-indigo-300 transition-colors">
+                <Icon className="h-5 w-5" strokeWidth={1.7} />
+              </div>
+              <h3 className="font-heading italic text-xl md:text-2xl text-white leading-tight">
+                {tile.title}
+              </h3>
+              <p className="text-sm text-white/65 font-body font-light leading-relaxed">
+                {tile.description}
+              </p>
+            </motion.div>
+          </div>
         );
       })}
     </div>
