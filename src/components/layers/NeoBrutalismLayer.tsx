@@ -14,6 +14,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { CONTACT_EMAIL } from "../../data";
+import { ScrollFilterHeading } from "../ScrollFilterHeading";
 
 type TierId = "landing" | "starter" | "growth" | "custom";
 type DesignLevel = "Simple" | "Standard" | "Custom" | "Premium";
@@ -263,11 +264,14 @@ export function NeoBrutalismLayer() {
           <div className="mb-4 inline-block border-4 border-black bg-black px-4 py-1.5 font-black text-xs uppercase text-white shadow-[4px_4px_0px_rgba(0,0,0,0.35)]">
             Pricing
           </div>
-          <h2 id="pricing-heading" className="text-5xl md:text-8xl font-black tracking-tight uppercase leading-none">
+          <ScrollFilterHeading
+            id="pricing-heading"
+            className="text-5xl md:text-8xl font-black tracking-tight uppercase leading-none"
+          >
             Clear pricing.
             <br />
             No surprises.
-          </h2>
+          </ScrollFilterHeading>
           <p className="mt-4 max-w-2xl font-body text-base font-medium leading-relaxed text-black/70 md:text-lg">
             One-time project pricing in INR. Pick the closest package, then adjust the scope
             to fit your business.

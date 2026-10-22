@@ -5,6 +5,7 @@
 
 import { FadingVideo } from "../FadingVideo";
 import { BentoGrid } from "../BentoGrid";
+import { ScrollFilterHeading } from "../ScrollFilterHeading";
 
 export function CapabilitiesSection() {
   return (
@@ -25,11 +26,11 @@ export function CapabilitiesSection() {
           <div className="text-xs tracking-widest uppercase text-white/60 font-body font-semibold mb-3">
             Capabilities
           </div>
-          <h2 className="font-heading italic text-white text-6xl md:text-8xl leading-[0.85] tracking-[-3px]">
+          <ScrollFilterHeading className="font-heading italic text-white text-6xl md:text-8xl leading-[0.85] tracking-[-3px]">
             Production,
             <br />
             evolved
-          </h2>
+          </ScrollFilterHeading>
           <p className="mt-6 max-w-xl font-body text-sm font-light leading-relaxed text-white/55 md:text-base">
             One partner for the website, the Google listing, the ads, and the social
             presence behind it.

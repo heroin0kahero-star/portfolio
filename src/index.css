@@ -155,6 +155,14 @@ html, body {
   background-size: 180px 180px;
 }
 
+.scroll-filter-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 /* --------------------------------------------------------------------------
    PROGRESSIVE EDGE BLUR — fixed, site-wide
    -------------------------------------------------------------------------- */

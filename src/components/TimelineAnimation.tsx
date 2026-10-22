@@ -8,6 +8,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
+import { ScrollFilterHeading } from "./ScrollFilterHeading";
 
 interface ProcessStep {
   id: string;
@@ -59,9 +60,9 @@ export function TimelineAnimation({ className = "" }: { className?: string }) {
           <span className="text-[10px] tracking-widest text-white/40 uppercase font-mono block mb-3">
             My Process
           </span>
-          <h2 className="font-heading italic text-4xl md:text-5xl text-white leading-none">
+          <ScrollFilterHeading className="font-heading italic text-4xl md:text-5xl text-white leading-none">
             How we work together
-          </h2>
+          </ScrollFilterHeading>
         </div>
 
         <div className="relative max-w-4xl mx-auto">

@@ -9,6 +9,7 @@ import {
   PROJECT_INQUIRY_SUBJECT,
   WHATSAPP_URL,
 } from "../data";
+import { ScrollFilterHeading } from "./ScrollFilterHeading";
 
 const mailtoHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(PROJECT_INQUIRY_SUBJECT)}`;
 
@@ -32,11 +33,11 @@ export default function ContactSection() {
             <Mail className="h-3 w-3 text-indigo-400" /> Contact
           </span>
 
-          <h2 className="font-heading italic text-5xl md:text-7xl leading-none tracking-[-2px] text-white">
+          <ScrollFilterHeading className="font-heading italic text-5xl md:text-7xl leading-none tracking-[-2px] text-white">
             Tell me what
             <br />
             your business needs.
-          </h2>
+          </ScrollFilterHeading>
 
           <p className="text-sm md:text-base text-white/60 font-body font-light leading-relaxed max-w-xl">
             Whether you are starting from scratch or replacing a site that no longer fits,

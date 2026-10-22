@@ -14,6 +14,7 @@ import {
   type DissolveState,
   type PortraitDissolveHandle,
 } from "./PortraitDissolve";
+import { ScrollFilterHeading } from "./ScrollFilterHeading";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -355,7 +356,6 @@ export default function AboutSection() {
       data-stage={activeStage}
       className="about-section relative bg-black"
     >
-      <h2 className="sr-only">About Suman</h2>
       <div ref={stickyRef} className="about-sticky sticky top-0 overflow-hidden">
         {/* Stage background wash */}
         <div className="about-stage-glow pointer-events-none absolute inset-0" />
@@ -379,7 +379,7 @@ export default function AboutSection() {
         <div className="about-chrome absolute inset-x-0 top-0 z-40 flex items-center justify-between px-6 pt-20 md:px-10 md:pt-24">
           <div className="flex items-center gap-3">
             <span className="about-mark" aria-hidden="true" />
-            <span className="about-label">Suman / About</span>
+            <ScrollFilterHeading className="about-label">About me</ScrollFilterHeading>
           </div>
           <span className="about-label about-label--right">
             {String(activeStage + 1).padStart(2, "0")} / 03

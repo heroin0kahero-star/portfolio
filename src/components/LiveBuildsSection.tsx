@@ -12,6 +12,7 @@ import {
   CardVideo,
   type CardVideoApi,
 } from "@/components/ui/3d-card-effect";
+import { ScrollFilterHeading } from "./ScrollFilterHeading";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -235,9 +236,9 @@ export default function LiveBuildsSection() {
           <span className="text-[10px] tracking-[4px] text-white/40 uppercase font-mono">
             [LIVE_BUILDS]
           </span>
-          <h2 className="font-heading italic text-5xl md:text-7xl leading-none tracking-[-2px] text-white">
+          <ScrollFilterHeading className="font-heading italic text-5xl md:text-7xl leading-none tracking-[-2px] text-white">
             Real sites. Live now.
-          </h2>
+          </ScrollFilterHeading>
           <p className="text-xs font-mono text-white/60">{subline}</p>
         </div>
 
