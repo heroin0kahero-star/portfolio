@@ -48,13 +48,13 @@ export default function App() {
           <AboutSection />
         </SectionBoundary>
 
+        <TimelineAnimation />
+
         <CapabilitiesSection />
 
         <SectionBoundary label="Live builds">
           <LiveBuildsSection />
         </SectionBoundary>
-
-        <TimelineAnimation />
 
         <SectionBoundary label="Pricing">
           <NeoBrutalismLayer />
