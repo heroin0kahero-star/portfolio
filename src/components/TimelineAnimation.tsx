@@ -1,13 +1,14 @@
 /**
  * @license SPDX-License-Identifier: Apache-2.0
- * Timeline Animation — built from scratch (21st.dev timeline-animation reference)
- * 4-step process: Brief → Design mockup → Build → Launch and support.
- * Scroll-linked reveal via framer-motion whileInView.
- * Respects prefers-reduced-motion.
+ *
+ * "How we work together" — a white, pinned process section with a single
+ * hand-built S-curve. The path draws with scroll (normalized stroke-dashoffset),
+ * four nodes appear as the line reaches them, and each stage's copy slides in
+ * beside its node. Desktop pins via a sticky frame; mobile turns the same path
+ * vertical; reduced motion shows the finished drawing without pinning.
  */
 
-import React from "react";
-import { motion } from "motion/react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ScrollFilterHeading } from "./ScrollFilterHeading";
 
 interface ProcessStep {
@@ -39,71 +40,305 @@ const STEPS: ProcessStep[] = [
   },
 ];
 
+/**
+ * Node positions as percentages of the 1440 x 760 path box. The path is drawn
+ * through these exact points, so the dots always sit on the line.
+ */
+const NODES = [
+  { x: 14, y: 72 },
+  { x: 39, y: 34 },
+  { x: 64, y: 70 },
+  { x: 87, y: 30 },
+] as const;
+
+/** Arc-length fractions (of pathLength=1) where each node is reached. */
+const DESKTOP_REACH = [0.11, 0.38, 0.64, 0.9] as const;
+
+const DESKTOP_PATH =
+  "M 50 547.2 L 201.6 547.2 " +
+  "C 321.6 547.2 441.6 258.4 561.6 258.4 " +
+  "C 681.6 258.4 801.6 532 921.6 532 " +
+  "C 1041.6 532 1132.8 228 1252.8 228 " +
+  "L 1390 228";
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export function TimelineAnimation({ className = "" }: { className?: string }) {
-  const reducedMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const pathRef = useRef<SVGPathElement | null>(null);
+  const mobilePathRef = useRef<SVGPathElement | null>(null);
+  const thresholdsRef = useRef<number[]>([...DESKTOP_REACH]);
+  const reachedRef = useRef(0);
+
+  const [staticMode, setStaticMode] = useState(prefersReducedMotion);
+  const [reached, setReached] = useState(0);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = () => setStaticMode(query.matches);
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (staticMode) {
+      reachedRef.current = STEPS.length;
+      setReached(STEPS.length);
+      return;
+    }
+
+    const section = sectionRef.current;
+    const canvas = canvasRef.current;
+    if (!section || !canvas) return;
+
+    let cancelled = false;
+    let started = false;
+    let trigger: { kill: () => void; progress: number } | null = null;
+    let observer: IntersectionObserver | null = null;
+    let cleanupBreakpoint: (() => void) | null = null;
+    let measureFrame = 0;
+
+    const isDesktop = () => window.matchMedia("(min-width: 768px)").matches;
+
+    /**
+     * Mobile thresholds come from the actual dot positions, so uneven copy
+     * lengths still light each node exactly when the line reaches it.
+     */
+    const measure = () => {
+      if (isDesktop()) {
+        thresholdsRef.current = [...DESKTOP_REACH];
+        return;
+      }
+      const box = canvas.getBoundingClientRect();
+      const height = Math.max(1, box.height);
+      const stages = Array.from(
+        canvas.querySelectorAll<HTMLElement>(".process-stage"),
+      );
+      thresholdsRef.current = stages.map((stage) =>
+        clamp01((stage.getBoundingClientRect().top - box.top + 12) / height),
+      );
+    };
+
+    const apply = (scrollProgress: number) => {
+      // Leave a short beat at both ends so the line starts and finishes inside
+      // the pin rather than snapping on the first/last frame.
+      const draw = clamp01((clamp01(scrollProgress) - 0.03) / 0.9);
+      if (pathRef.current) {
+        pathRef.current.style.strokeDashoffset = (1 - draw).toFixed(4);
+      }
+      if (mobilePathRef.current) {
+        mobilePathRef.current.style.strokeDashoffset = (1 - draw).toFixed(4);
+      }
+
+      const count = thresholdsRef.current.filter(
+        (threshold) => draw >= threshold - 0.005,
+      ).length;
+      if (count !== reachedRef.current) {
+        reachedRef.current = count;
+        setReached(count);
+      }
+    };
+
+    const start = async () => {
+      if (cancelled || started) return;
+      started = true;
+
+      let gsap: typeof import("gsap")["default"];
+      let ScrollTrigger: typeof import("gsap/ScrollTrigger")["ScrollTrigger"];
+      try {
+        [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
+          import("gsap"),
+          import("gsap/ScrollTrigger"),
+        ]);
+      } catch {
+        // If the motion chunk cannot load, leave the section in its static,
+        // fully drawn state rather than a blank white panel.
+        if (!cancelled) setStaticMode(true);
+        return;
+      }
+      if (cancelled) return;
+
+      gsap.registerPlugin(ScrollTrigger);
+
+      const build = () => {
+        if (cancelled) return;
+        trigger?.kill();
+        measure();
+
+        const desktop = isDesktop();
+        trigger = ScrollTrigger.create({
+          trigger: desktop ? section : canvas,
+          start: desktop ? "top top" : "top 78%",
+          end: desktop ? "bottom bottom" : "bottom 82%",
+          onUpdate: (self) => apply(self.progress),
+          onRefresh: () => {
+            measure();
+            if (trigger) apply(trigger.progress);
+          },
+        });
+        apply(trigger.progress);
+      };
+
+      const breakpoint = window.matchMedia("(min-width: 768px)");
+      breakpoint.addEventListener("change", build);
+      cleanupBreakpoint = () => breakpoint.removeEventListener("change", build);
+      build();
+
+      document.fonts?.ready
+        .then(() => {
+          if (cancelled) return;
+          measure();
+          build();
+        })
+        .catch(() => {});
+    };
+
+    if ("IntersectionObserver" in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          observer?.disconnect();
+          observer = null;
+          void start();
+        },
+        { rootMargin: "100% 0px 100% 0px" },
+      );
+      observer.observe(section);
+    } else {
+      void start();
+    }
+
+    const onResize = () => {
+      cancelAnimationFrame(measureFrame);
+      measureFrame = requestAnimationFrame(() => {
+        measure();
+        if (trigger) apply(trigger.progress);
+      });
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      cancelAnimationFrame(measureFrame);
+      window.removeEventListener("resize", onResize);
+      cleanupBreakpoint?.();
+      trigger?.kill();
+    };
+  }, [staticMode]);
 
   return (
     <section
       id="process"
-      className={`relative py-24 px-6 md:px-12 bg-black select-none ${className}`}
+      ref={sectionRef}
+      aria-labelledby="process-heading"
+      data-static={staticMode ? "true" : undefined}
+      className={`process-section ${className}`.trim()}
     >
-      <div className="absolute inset-0 flex justify-between pointer-events-none opacity-[0.03]">
-        <div className="w-[1px] bg-neutral-500 h-full ml-16" />
-        <div className="w-[1px] bg-neutral-500 h-full" />
-        <div className="w-[1px] bg-neutral-500 h-full mr-16" />
-      </div>
+      <div className="process-frame">
+        <header className="process-header">
+          <div className="process-header__lockup">
+            <span className="process-eyebrow">My Process</span>
+            <ScrollFilterHeading
+              as="h2"
+              id="process-heading"
+              className="process-heading"
+            >
+              How we work together
+            </ScrollFilterHeading>
+          </div>
+          <div className="process-counter" aria-hidden="true">
+            <span className="process-counter__current">
+              {String(Math.max(1, Math.min(4, reached))).padStart(2, "0")}
+            </span>
+            <span className="process-counter__total">/ 04</span>
+          </div>
+        </header>
 
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <span className="text-[10px] tracking-widest text-white/40 uppercase font-mono block mb-3">
-            My Process
-          </span>
-          <ScrollFilterHeading className="font-heading italic text-4xl md:text-5xl text-white leading-none">
-            How we work together
-          </ScrollFilterHeading>
-        </div>
+        <div ref={canvasRef} className="process-canvas">
+          <svg
+            className="process-line process-line--desktop"
+            viewBox="0 0 1440 760"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              ref={pathRef}
+              d={DESKTOP_PATH}
+              pathLength={1}
+              fill="none"
+              stroke="#111111"
+              strokeWidth={2}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
 
-        <div className="relative max-w-4xl mx-auto">
-          {/* Vertical connector line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 transform -translate-x-1/2" />
+          <svg
+            className="process-line process-line--mobile"
+            viewBox="0 0 2 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              ref={mobilePathRef}
+              d="M 1 0 V 100"
+              pathLength={1}
+              fill="none"
+              stroke="#111111"
+              strokeWidth={2}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
 
-          {STEPS.map((step, idx) => {
-            const isLast = idx === STEPS.length - 1;
-            return (
-              <motion.div
+          <div className="process-nodes" aria-hidden="true">
+            {NODES.map((node, index) => (
+              <span
+                key={STEPS[index].id}
+                className="process-node"
+                data-reached={index < reached}
+                style={
+                  {
+                    "--x": `${node.x}%`,
+                    "--y": `${node.y}%`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </div>
+
+          <div className="process-stages">
+            {STEPS.map((step, index) => (
+              <article
                 key={step.id}
-                whileInView={{
-                  opacity: 1,
-                  y: 0,
-                  transition: { duration: 0.6, ease: "easeOut" },
-                }}
-                initial={{ opacity: 0, y: 20 }}
-                viewport={{ once: true }}
-                className={`relative mb-16 md:mb-24 px-6 ${isLast ? "md:mb-0" : ""}`}
+                className="process-stage"
+                data-side={index % 2 === 0 ? "above" : "below"}
+                data-reached={index < reached}
+                style={
+                  {
+                    "--x": `${NODES[index].x}%`,
+                    "--y": `${NODES[index].y}%`,
+                  } as CSSProperties
+                }
               >
-                {/* Step number */}
-                <div className="absolute -left-[60px] top-4 w-8 h-8 rounded-full border-2 border-white text-white text-xs font-mono font-bold flex items-center justify-center">
-                  {idx + 1}
+                <div className="process-stage__copy">
+                  <span className="process-stage__index">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="process-stage__title">{step.title}</h3>
+                  <span className="process-stage__rule" aria-hidden="true" />
+                  <p className="process-stage__body">{step.description}</p>
                 </div>
-
-                {/* Connector dots for non-last steps */}
-                {!isLast && (
-                  <div className="absolute left-1/2 top-[60px] -translate-x-1/2 w-2 h-2 rounded-full bg-white" />
-                )}
-
-                <div className="bg-white/[0.02] border border-white/5 rounded-[1.25rem] p-6 md:p-8">
-                  <h3 className="font-heading italic text-xl md:text-2xl text-white mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-white/60 font-body font-light leading-relaxed">
-                    {step.description}
-                  </p>
-                </div>
-              </motion.div>
-            );
-          })}
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>

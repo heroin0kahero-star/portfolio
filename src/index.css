@@ -278,8 +278,11 @@ html, body {
     display: none;
   }
 
+  /* No opaque fallback: a black gradient would paint dark bands across the
+     white About and Process sections. Unsupported browsers simply get no
+     edge blur, which is a safe degradation. */
   .progressive-blur__fallback {
-    display: block;
+    display: none;
   }
 }
 
@@ -672,3 +675,329 @@ html, body {
     transition: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   PROCESS — white, pinned, S-curve drawn by scroll
+   -------------------------------------------------------------------------- */
+
+.process-section {
+  position: relative;
+  background: #ffffff;
+  color: #111111;
+}
+
+.process-frame {
+  position: relative;
+  overflow: hidden;
+  padding: 124px 24px 96px;
+}
+
+.process-header {
+  display: block;
+  margin-bottom: 48px;
+}
+
+.process-eyebrow {
+  display: block;
+  margin-bottom: 14px;
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 10px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(17, 17, 17, 0.62);
+}
+
+.process-heading {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2.6rem, 9vw, 4.25rem);
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  color: #111111;
+}
+
+.process-counter {
+  margin-top: 18px;
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  color: #111111;
+  white-space: nowrap;
+}
+
+.process-counter__total {
+  margin-left: 4px;
+  color: rgba(17, 17, 17, 0.62);
+}
+
+.process-canvas {
+  position: relative;
+}
+
+.process-line {
+  color: #111111;
+}
+
+.process-line path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.process-line--desktop {
+  display: none;
+}
+
+.process-line--mobile {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 16px;
+  display: block;
+  width: 2px;
+}
+
+.process-nodes {
+  display: none;
+}
+
+.process-stages {
+  position: relative;
+}
+
+.process-stage {
+  position: relative;
+  padding-left: 48px;
+}
+
+.process-stage + .process-stage {
+  margin-top: 44px;
+}
+
+.process-stage::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 9px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #111111;
+  border-radius: 9999px;
+  background: #ffffff;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 420ms ease, transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.process-stage[data-reached="true"]::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.process-stage__copy {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 700ms ease, transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.process-stage[data-reached="true"] .process-stage__copy {
+  opacity: 1;
+  transform: none;
+}
+
+.process-stage__index {
+  display: block;
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.24em;
+  color: rgba(17, 17, 17, 0.62);
+}
+
+.process-stage__title {
+  margin: 8px 0 0;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.35rem;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.process-stage__rule {
+  display: block;
+  width: 24px;
+  height: 1px;
+  margin-top: 12px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.process-stage__body {
+  margin: 10px 0 0;
+  max-width: 34ch;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(17, 17, 17, 0.62);
+}
+
+@media (min-width: 768px) {
+  .process-section {
+    height: 340vh;
+    min-height: 2300px;
+  }
+
+  .process-frame {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    padding: 0;
+  }
+
+  .process-header {
+    position: absolute;
+    top: 15svh;
+    right: 5.5vw;
+    left: 5.5vw;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 32px;
+    margin: 0;
+  }
+
+  .process-counter {
+    margin-top: 4px;
+  }
+
+  .process-canvas {
+    position: absolute;
+    inset: 27svh 0 4svh 0;
+  }
+
+  .process-line--desktop {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .process-line--mobile {
+    display: none;
+  }
+
+  .process-nodes {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+  }
+
+  .process-node {
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    width: 9px;
+    height: 9px;
+    margin: -4.5px 0 0 -4.5px;
+    border-radius: 9999px;
+    background: #111111;
+    opacity: 0;
+    transform: scale(0.2);
+    transition: opacity 420ms ease, transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .process-node::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border: 1px solid rgba(17, 17, 17, 0.22);
+    border-radius: 9999px;
+  }
+
+  .process-node[data-reached="true"] {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .process-stages {
+    position: absolute;
+    inset: 0;
+  }
+
+  .process-stage {
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    /* 170px keeps four columns clear of each other at 768px; 18vw lets them
+       grow to a readable measure on larger screens. */
+    width: clamp(170px, 18vw, 290px);
+    padding-left: 0;
+  }
+
+  .process-stage + .process-stage {
+    margin-top: 0;
+  }
+
+  .process-stage[data-side="above"] {
+    transform: translate(-50%, -100%);
+    padding-bottom: 28px;
+  }
+
+  .process-stage[data-side="below"] {
+    transform: translate(-50%, 0);
+    padding-top: 28px;
+  }
+
+  .process-stage::before {
+    display: none;
+  }
+
+  .process-stage__copy {
+    transform: translateX(30px);
+  }
+
+  .process-stage__title {
+    font-size: clamp(1.5rem, 2.2vw, 2rem);
+  }
+}
+
+/* Reduced motion (and the load-failure fallback): a finished, static drawing. */
+.process-section[data-static="true"] .process-line path {
+  stroke-dashoffset: 0 !important;
+}
+
+.process-section[data-static="true"] .process-stage__copy {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.process-section[data-static="true"] .process-stage::before,
+.process-section[data-static="true"] .process-node {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (min-width: 768px) {
+  .process-section[data-static="true"] {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .process-section[data-static="true"] .process-frame {
+    position: relative;
+    height: 100svh;
+  }
+
+  .process-section[data-static="true"] .process-stage__copy {
+    transform: none;
+  }
+}
+
+
