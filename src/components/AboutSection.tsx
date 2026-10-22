@@ -375,10 +375,6 @@ export default function AboutSection() {
         {/* Subtle film grain keeps the flat backgrounds from looking like a slab */}
         <div className="about-grain pointer-events-none absolute inset-0" aria-hidden="true" />
 
-        {/* Soft blur bands, fading toward the middle */}
-        <div className="about-blur about-blur--top" aria-hidden="true" />
-        <div className="about-blur about-blur--bottom" aria-hidden="true" />
-
         {/* Section chrome */}
         <div className="about-chrome absolute inset-x-0 top-0 z-40 flex items-center justify-between px-6 pt-20 md:px-10 md:pt-24">
           <div className="flex items-center gap-3">

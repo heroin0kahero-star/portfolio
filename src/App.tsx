@@ -5,6 +5,7 @@
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Navigation } from "./components/Navigation";
+import { ProgressiveBlurEdges } from "./components/ProgressiveBlurEdges";
 import { HeroSection } from "./components/sections/HeroSection";
 import { CapabilitiesSection } from "./components/sections/CapabilitiesSection";
 import { TimelineAnimation } from "./components/TimelineAnimation";
@@ -39,6 +40,7 @@ export default function App() {
   return (
     <>
       <Navigation />
+      <ProgressiveBlurEdges />
       <main className="relative min-h-screen bg-black text-white selection:bg-indigo-500/20">
         <HeroSection />
 
