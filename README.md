@@ -2,15 +2,15 @@
 
 A single-page portfolio for Suman (freelance web developer) built with **React 19, Vite 6, TypeScript, and Tailwind CSS v4**.
 
-The page is a scroll-linked showcase of five distinct visual systems:
+The page tells one clear story:
 
-1. **Cinematic Space** — hero + capabilities with background video
-2. **Tactile Neumorphism** — interactive client-works department with live CSS filters
-3. **Raw Brutalism** — channel-style project index with a "livestream" preview panel
-4. **Neo-Brutalist Playground** — live budget calculator that drafts a `mailto:` inquiry
-5. **Awwwards / Tubes** — experimental WebGL 3D tubes cursor + fine-art slider
-
-Each layer uses its own custom cursor, is code-split with `React.lazy`, and is individually guarded by an `ErrorBoundary` so a failure in one section never blanks the page.
+1. **Hero** — who Suman is and what he builds
+2. **About** — a pinned, scroll-driven three-stage portrait story
+3. **Capabilities** — websites, SEO, ads, social media, and enquiries
+4. **Pricing** — four INR packages plus a live estimate customizer
+5. **Live builds** — three real client sites
+6. **Process** — brief, design, build, launch
+7. **Contact** — email and WhatsApp
 
 ## Run locally
 
@@ -19,10 +19,12 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
+Copy `.env.example` to `.env` and set `VITE_WHATSAPP_NUMBER` (country code, digits only) to enable the WhatsApp link. Without it, the link still opens WhatsApp with the prefilled message.
+
 ## Build
 
 ```bash
-npm run build      # outputs to dist/ (includes public/ 404.html)
+npm run build      # outputs to dist/
 npm run preview    # serve the production build
 npm run lint       # tsc --noEmit
 ```
