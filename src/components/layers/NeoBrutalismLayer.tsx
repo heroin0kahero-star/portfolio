@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Sparkles,
   Calculator,
@@ -11,10 +11,12 @@ import {
   MessageSquare,
   Rocket,
   RotateCcw,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 import { CONTACT_EMAIL } from "../../data";
-import { ScrollFilterHeading } from "../ScrollFilterHeading";
+import { PricingCard } from "../pricing/PricingCard";
+import { RepeatedTextHeading } from "../pricing/RepeatedTextHeading";
+import "../pricing/pricing.css";
 
 type TierId = "landing" | "starter" | "growth" | "custom";
 type DesignLevel = "Simple" | "Standard" | "Custom" | "Premium";
@@ -128,6 +130,7 @@ function selectTierDefaults(tierId: TierId) {
 
 export function NeoBrutalismLayer() {
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const cardsRef = useRef<HTMLDivElement | null>(null);
   const [selectedTier, setSelectedTier] = useState<TierId | null>(null);
   const [pagesStep, setPagesStep] = useState<number>(4);
   const [designStep, setDesignStep] = useState<number>(1);
@@ -137,6 +140,28 @@ export function NeoBrutalismLayer() {
   const [delivery, setDelivery] = useState<DeliveryChoice>("Standard");
   const [industry, setIndustry] = useState<string>("Other");
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Pause the idle float whenever the card row is off-screen.
+  useEffect(() => {
+    const grid = cardsRef.current;
+    if (!grid) return;
+
+    if (!("IntersectionObserver" in window)) {
+      grid.classList.add("is-live");
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          grid.classList.toggle("is-live", entry.isIntersecting);
+        });
+      },
+      { rootMargin: "120px 0px 120px 0px" }
+    );
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, []);
 
   const applyTier = (tierId: TierId) => {
     const d = selectTierDefaults(tierId);
@@ -248,420 +273,331 @@ export function NeoBrutalismLayer() {
     <section
       id="pricing"
       aria-labelledby="pricing-heading"
-      className="relative min-h-screen bg-[#FFDE03] text-black py-20 px-4 md:px-8 select-none scroll-smooth border-y-[6px] border-black"
+      className="pricing-section py-24 md:py-32 select-none scroll-smooth"
     >
-      
-      {/* Playful polka dots style underlay background */}
-      <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{
-        backgroundImage: "radial-gradient(#000000 2px, transparent 2px)",
-        backgroundSize: "24px 24px"
-      }} />
-
-      <div className="max-w-7xl mx-auto relative z-10 text-left">
-        
-        {/* Section heading */}
-        <div className="mb-12 max-w-3xl">
-          <div className="mb-4 inline-block border-4 border-black bg-black px-4 py-1.5 font-black text-xs uppercase text-white shadow-[4px_4px_0px_rgba(0,0,0,0.35)]">
-            Pricing
+      <div className="pricing-shell">
+        <div className="pricing-gutter">
+          <div className="pricing-eyebrow-row">
+            <span className="pricing-eyebrow-rule" aria-hidden="true" />
+            <span className="pricing-eyebrow">Pricing</span>
           </div>
-          <ScrollFilterHeading
-            id="pricing-heading"
-            className="text-5xl md:text-8xl font-black tracking-tight uppercase leading-none"
-          >
-            Clear pricing.
-            <br />
-            No surprises.
-          </ScrollFilterHeading>
-          <p className="mt-4 max-w-2xl font-body text-base font-medium leading-relaxed text-black/70 md:text-lg">
+        </div>
+
+        <RepeatedTextHeading />
+
+        <div className="pricing-gutter">
+          <p className="pricing-subtitle">
             One-time project pricing in INR. Pick the closest package, then adjust the scope
             to fit your business.
           </p>
-        </div>
 
-        {/* SECTION A: PRESET PACKAGE CARDS */}
-        <div className="mb-10">
-          <div className="mb-5 inline-block border-4 border-black bg-white px-4 py-1.5 font-black text-xs uppercase shadow-[4px_4px_0px_#000]">
-            Choose a starting point
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-            {TIERS.map((t) => {
-              const active = selectedTier === t.id;
-              return (
-                <div
+          {/* SECTION A: PRESET PACKAGE CARDS */}
+          <div className="pricing-cards-block">
+            <span className="pricing-cards-eyebrow">Choose a starting point</span>
+            <div className="pricing-cards" ref={cardsRef}>
+              {TIERS.map((t) => (
+                <PricingCard
                   key={t.id}
-                  className={`relative flex flex-col border-4 border-black bg-white p-6 transition-all flex-1 ${
-                    active
-                      ? "bg-yellow-300 translate-x-1 translate-y-1 shadow-[4px_4px_0px_#000]"
-                      : "shadow-[8px_8px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[6px_6px_0px_#000]"
-                  }`}
-                >
-                  {active && (
-                    <div className="absolute -top-3 -right-3 border-4 border-black bg-black text-white text-[10px] font-black uppercase px-3 py-1 rotate-3">
-                      Selected
-                    </div>
-                  )}
-                  <h3 className="text-2xl font-black uppercase tracking-tight">{t.name}</h3>
-                  <p className="text-xs text-neutral-600 mt-3 leading-snug font-body">{t.blurb}</p>
-
-                  <div className="mt-4 font-mono">
-                    <span className="text-3xl md:text-4xl font-black tracking-tighter block">
-                      {t.rangeLabel}
-                    </span>
-                    <span className="text-xs font-bold text-neutral-500 block mt-1">
-                      One-time project estimate
-                    </span>
-                  </div>
-
-                  <ul className="mt-5 flex flex-col gap-2 text-xs font-bold uppercase font-mono flex-1">
-                    {t.included.map((line) => (
-                      <li key={line} className="flex items-start gap-2">
-                        <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-700" />
-                        <span>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <button
-                    type="button"
-                    onClick={() => applyTier(t.id)}
-                    aria-pressed={active}
-                    className={`mt-6 w-full py-3.5 border-4 border-black text-sm font-black uppercase tracking-wide flex items-center justify-center gap-2 transition-all active:translate-y-0.5 cursor-pointer ${
-                      active
-                        ? "bg-black text-white shadow-[2px_2px_0px_#000]"
-                        : "bg-[#F27D26] shadow-[4px_4px_0px_#000] hover:bg-orange-400"
-                    }`}
-                  >
-                    {active ? <CheckCircle className="h-4 w-4" /> : null}
-                    {active ? "Package selected" : "Select this package"}
-                  </button>
-                </div>
-              );
-            })}
+                  name={t.name}
+                  price={t.rangeLabel}
+                  blurb={t.blurb}
+                  features={t.included}
+                  active={selectedTier === t.id}
+                  onSelect={() => applyTier(t.id)}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Standalone customize link */}
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-body font-medium text-black/70">
-              Want a different mix?
-            </span>
+          <div className="pricing-customize">
+            <span>Want a different mix?</span>
             <button
               type="button"
               onClick={startCustomizing}
-              className="inline-flex items-center gap-2 border-4 border-black bg-white px-4 py-2 text-xs font-black uppercase shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all cursor-pointer"
+              className="pricing-customize__link"
             >
-              Customize instead <ArrowRight className="h-4 w-4" />
+              Customize instead <ArrowRight aria-hidden="true" />
             </button>
           </div>
-        </div>
 
-        {/* SECTION B: CUSTOMIZE PANEL — revealed after a tier is selected */}
-        {customizing && tier && (
-          <div ref={panelRef} className="grid scroll-mt-24 grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          {/* SECTION B: CUSTOMIZE PANEL — revealed after a tier is selected */}
+          {customizing && tier && (
+            <div ref={panelRef} className="pricing-panel scroll-mt-24">
 
-            {/* CUSTOMIZE CONTROLS PANEL (7 cols) */}
-            <div className="lg:col-span-7 bg-white border-[6px] border-black p-6 md:p-8 shadow-[8px_8px_0px_#000] rounded-none">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-4 border-black pb-4 mb-6">
-                <h3 className="text-2xl md:text-3xl font-black uppercase flex items-center gap-3">
-                  <Calculator className="h-6 w-6 stroke-3" /> Customize this build
-                </h3>
-                <button
-                  type="button"
-                  onClick={resetToTierDefaults}
-                  className="inline-flex items-center gap-2 border-4 border-black bg-white px-3 py-2 text-[11px] font-black uppercase shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all cursor-pointer"
-                >
-                  <RotateCcw className="h-4 w-4" /> Reset to {tier.name}
-                </button>
-              </div>
-
-              {/* Baseline banner */}
-              <div className="border-4 border-black bg-yellow-300 px-4 py-3 mb-6 font-mono text-xs font-black uppercase flex flex-wrap items-center justify-between gap-2">
-                <span>Baseline: {tier.name} — from {inr(tier.rangeLow)}</span>
-                <span className="text-neutral-600">
-                  {tier.fixedPages ? "1 page" : `${tier.pages} pages`} · {tier.design} design · {tier.features.length} feature{tier.features.length === 1 ? "" : "s"} included
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-6">
-
-                {/* Industry vertical chip select */}
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider font-mono block mb-3">
-                    Industry
-                  </span>
-                  <div className="flex flex-wrap gap-2.5">
-                    {INDUSTRIES.map((ind) => {
-                      const active = industry === ind;
-                      return (
-                        <button
-                          key={ind}
-                          type="button"
-                          onClick={() => setIndustry(ind)}
-                          aria-pressed={active}
-                          className={`px-4 py-2 text-xs font-black uppercase border-4 border-black transition-all active:translate-y-0.5 cursor-pointer ${
-                            active ? "bg-black text-white" : "bg-white hover:bg-yellow-200 shadow-[3px_3px_0px_#000]"
-                          }`}
-                        >
-                          {ind}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Number of pages — hidden/disabled for fixed single-page Landing tier */}
-                {tier.fixedPages ? (
-                  <div className="border-4 border-black p-5 bg-orange-100">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                        Number of pages
-                      </span>
-                      <span className="h-8 min-w-14 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
-                        {pagesStep}
-                      </span>
-                    </div>
-                    <p className="text-[10px] font-mono font-bold uppercase text-neutral-600 mt-3">
-                      Fixed single-page scope — not applicable to {tier.name}.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="border-4 border-black p-5 bg-orange-100">
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                        Number of pages
-                      </span>
-                      <span className="h-8 min-w-14 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
-                        {pagesStep}
-                      </span>
-                    </div>
-                    <input
-                      id="pricing-pages"
-                      type="range"
-                      min={1}
-                      max={20}
-                      step={1}
-                      value={pagesStep}
-                      aria-label="Number of pages"
-                      onChange={(e) => setPagesStep(parseInt(e.target.value))}
-                      className="w-full cursor-pointer accent-[#F27D26]"
-                    />
-                    <div className="flex justify-between text-[10px] font-mono font-bold uppercase text-neutral-600 mt-1">
-                      <span>1 Page</span>
-                      <span>20 Pages</span>
-                    </div>
-                    <p className="text-[10px] font-mono font-bold uppercase text-neutral-600 mt-2">
-                      {tier.pages} pages included · +{inr(PAGE_FEE)}/page beyond that (est.)
-                    </p>
-                  </div>
-                )}
-
-                {/* Design complexity slider */}
-                <div className="border-4 border-black p-5 bg-white">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                      Design complexity
-                    </span>
-                    <span className="h-8 px-2 inline-flex items-center justify-center border-4 border-black bg-white font-mono font-black text-base">
-                      {design}
-                    </span>
-                  </div>
-                  <input
-                    id="pricing-design"
-                    type="range"
-                    min={0}
-                    max={DESIGN_LEVELS.length - 1}
-                    step={1}
-                    value={designStep}
-                    aria-label="Design complexity"
-                    onChange={(e) => setDesignStep(parseInt(e.target.value))}
-                    className="w-full cursor-pointer accent-[#F27D26]"
-                  />
-                  <div className="grid grid-cols-4 gap-1 mt-1">
-                    {DESIGN_LEVELS.map((level) => {
-                      const upcharge = Math.max(0, DESIGN_FEES[level] - DESIGN_FEES[tier.design]);
-                      const active = level === design;
-                      return (
-                        <button
-                          key={level}
-                          onClick={() => setDesignStep(DESIGN_LEVELS.indexOf(level))}
-                          className={`py-1.5 text-[10px] font-black uppercase border-2 border-black transition-all ${
-                            active ? "bg-black text-white" : "bg-yellow-200 hover:bg-yellow-300"
-                          }`}
-                        >
-                          {level}
-                          <span className="block font-mono font-bold mt-0.5">
-                            {upcharge ? `+${inr(upcharge)} est.` : "included"}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[10px] font-mono font-bold uppercase text-neutral-600 mt-2">
-                    {tier.design} design included with {tier.name}
-                  </p>
-                </div>
-
-                {/* Features checkboxes */}
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider font-mono block mb-3">
-                    Features
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {FEATURE_IDS.map((id) => {
-                      const cfg = FEATURES[id];
-                      const included = tier.features.includes(id);
-                      const active = featuresState[id];
-                      return (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => toggleFeature(id)}
-                          aria-pressed={active}
-                          className={`border-4 border-black p-4 cursor-pointer flex items-start justify-between gap-3 transition-all select-none active:translate-y-0.5 text-left ${
-                            active
-                              ? cfg.recurring
-                                ? "bg-pink-300 shadow-[4px_4px_0px_#000]"
-                                : "bg-yellow-300 shadow-[4px_4px_0px_#000]"
-                              : "bg-white hover:bg-neutral-50"
-                          }`}
-                        >
-                          <span>
-                            <span className="block text-sm font-black uppercase leading-tight">{cfg.label}</span>
-                            <span className="block text-[10px] text-neutral-600 mt-1 font-mono font-bold uppercase">
-                              {cfg.recurring ? `${inr(cfg.fee)}/month · est.` : `+ ${inr(cfg.fee)} est.`}
-                              {included ? " · included in package" : ""}
-                            </span>
-                          </span>
-                          <span className="h-7 w-7 shrink-0 border-4 border-black bg-white flex items-center justify-center font-black">
-                            {active ? <CheckCircle className="h-4 w-4" /> : ""}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Delivery Timeframe */}
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider font-mono block mb-3">
-                    Delivery timeframe
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[
-                      { id: "Standard" as DeliveryChoice, label: "Standard delivery", days: COUNT_DOWN_STANDARD, feeNote: "Included" },
-                      { id: "Express" as DeliveryChoice, label: "Express delivery", days: COUNT_DOWN_EXPRESS, feeNote: `+${inr(EXPRESS_FEE)} est.` },
-                    ].map((opt) => {
-                      const active = delivery === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setDelivery(opt.id)}
-                          aria-pressed={active}
-                          className={`p-4 border-4 border-black text-sm font-black uppercase text-left transition-all relative ${
-                            active ? "bg-orange-300 translate-y-1 shadow-[2px_2px_0px_#000]" : "bg-white hover:bg-neutral-50 shadow-[4px_4px_0px_#000]"
-                          }`}
-                        >
-                          {opt.label}
-                          <span className="text-[10px] block font-normal font-mono text-neutral-600 uppercase mt-1">
-                            {opt.days} ({opt.feeNote})
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            {/* LIVE ESTIMATE OUTPUT & CTA (5 cols) */}
-            <div className="lg:col-span-5 sticky top-24 flex flex-col gap-6">
-              
-              {/* Display Box */}
-              <div className="bg-yellow-400 border-[6px] border-black p-6 md:p-8 shadow-[8px_8px_0px_#000] rotate-[0.5deg]">
-                <span className="text-xs font-bold uppercase tracking-wider font-mono block mb-2 text-neutral-800">
-                  Your estimate
-                </span>
-                
-                <div className="flex justify-between items-baseline border-b-4 border-black pb-4 mb-2">
-                  <span className="text-lg font-black uppercase">Estimated total</span>
-                  <span
-                    aria-live="polite"
-                    className="text-3xl md:text-5xl font-black font-sans bg-white border-2 border-black px-3 py-1 shadow-[2px_2px_0px_#000]"
-                  >
-                    {inr(oneTime)}
-                  </span>
-                </div>
-                <p className="text-[10px] font-mono font-bold uppercase text-neutral-700 mb-4">
-                  This is an estimate. Final quote confirmed after a quick scope call.
-                </p>
-
-                {/* Breakdown */}
-                <ul className="text-xs font-mono flex flex-col gap-2 bg-white/60 p-4 border-2 border-black text-left mb-4 font-semibold">
-                  {items.map((item, i) => (
-                    <li
-                      key={i}
-                      className={item.recurring ? "text-pink-700 font-black" : ""}
-                    >
-                      {item.recurring ? "Recurring: " : ""}{item.text}
-                    </li>
-                  ))}
-                  <li className="text-sm font-black border-t-2 border-black pt-2 mt-1">
-                    Estimated total (one-time): {inr(oneTime)}
-                  </li>
-                  {monthly > 0 && (
-                    <li className="text-pink-700 font-black">
-                      Recurring estimate: {inr(monthly)}/month
-                    </li>
-                  )}
-                  <li className="text-neutral-600 font-bold">
-                    Industry: {industry}
-                  </li>
-                </ul>
-
-                {isSubmitted ? (
-                  <div role="status" className="bg-lime-400 border-4 border-black p-4 font-black uppercase text-center text-sm shadow-[4px_4px_0px_#000] my-2">
-                    Request ready. Your email app should open with the details filled in.
-                  </div>
-                ) : (
+              {/* CUSTOMIZE CONTROLS PANEL */}
+              <div className="pricing-panel__controls">
+                <div className="pricing-panel__head">
+                  <h3 className="pricing-panel__title">
+                    <Calculator className="h-6 w-6" aria-hidden="true" /> Customize this build
+                  </h3>
                   <button
                     type="button"
-                    className="w-full py-4 neo-brutal-btn text-white hover:opacity-90 hover:scale-[1.01] transition-all text-lg font-black uppercase tracking-wide flex items-center justify-center gap-3 active:translate-y-1 cursor-pointer"
-                    onClick={submitRequest}
+                    onClick={resetToTierDefaults}
+                    className="pricing-ghost-btn"
                   >
-                    Send this request <Sparkles className="h-5 w-5 fill-current" />
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" /> Reset to {tier.name}
                   </button>
-                )}
-              </div>
+                </div>
 
-              {/* Trust note */}
-              <div className="border-4 border-black bg-pink-300 p-5 shadow-[4px_4px_0px_#000] -rotate-2 flex items-start gap-3">
-                <MessageSquare className="h-6 w-6 stroke-2 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-black uppercase">Transparent billing</h4>
-                  <p className="text-xs mt-1 leading-snug">
-                    No hidden margins. You choose what you need, and the final quote is agreed
-                    before any work starts.
-                  </p>
+                {/* Baseline banner */}
+                <div className="pricing-baseline">
+                  <span>Baseline: {tier.name} — from {inr(tier.rangeLow)}</span>
+                  <span className="pricing-baseline__meta">
+                    {tier.fixedPages ? "1 page" : `${tier.pages} pages`} · {tier.design} design · {tier.features.length} feature{tier.features.length === 1 ? "" : "s"} included
+                  </span>
+                </div>
+
+                <div className="pricing-controls">
+
+                  {/* Industry vertical chip select */}
+                  <div>
+                    <span className="pricing-field__label">Industry</span>
+                    <div className="pricing-chips">
+                      {INDUSTRIES.map((ind) => {
+                        const active = industry === ind;
+                        return (
+                          <button
+                            key={ind}
+                            type="button"
+                            onClick={() => setIndustry(ind)}
+                            aria-pressed={active}
+                            className={`pricing-chip${active ? " is-active" : ""}`}
+                          >
+                            {ind}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Number of pages — hidden/disabled for fixed single-page Landing tier */}
+                  <div className="pricing-field">
+                    <div className="pricing-field__row">
+                      <span className="pricing-field__label" style={{ marginBottom: 0 }}>
+                        Number of pages
+                      </span>
+                      <span className="pricing-field__value">{pagesStep}</span>
+                    </div>
+
+                    {tier.fixedPages ? (
+                      <p className="pricing-field__hint">
+                        Fixed single-page scope — not applicable to {tier.name}.
+                      </p>
+                    ) : (
+                      <>
+                        <input
+                          id="pricing-pages"
+                          type="range"
+                          min={1}
+                          max={20}
+                          step={1}
+                          value={pagesStep}
+                          aria-label="Number of pages"
+                          onChange={(e) => setPagesStep(parseInt(e.target.value))}
+                          className="pricing-range"
+                        />
+                        <div className="pricing-range-scale">
+                          <span>1 Page</span>
+                          <span>20 Pages</span>
+                        </div>
+                        <p className="pricing-field__hint">
+                          {tier.pages} pages included · +{inr(PAGE_FEE)}/page beyond that (est.)
+                        </p>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Design complexity slider */}
+                  <div className="pricing-field">
+                    <div className="pricing-field__row">
+                      <span className="pricing-field__label" style={{ marginBottom: 0 }}>
+                        Design complexity
+                      </span>
+                      <span className="pricing-field__value">{design}</span>
+                    </div>
+                    <input
+                      id="pricing-design"
+                      type="range"
+                      min={0}
+                      max={DESIGN_LEVELS.length - 1}
+                      step={1}
+                      value={designStep}
+                      aria-label="Design complexity"
+                      onChange={(e) => setDesignStep(parseInt(e.target.value))}
+                      className="pricing-range"
+                    />
+                    <div className="pricing-design-grid">
+                      {DESIGN_LEVELS.map((level) => {
+                        const upcharge = Math.max(0, DESIGN_FEES[level] - DESIGN_FEES[tier.design]);
+                        const active = level === design;
+                        return (
+                          <button
+                            key={level}
+                            type="button"
+                            onClick={() => setDesignStep(DESIGN_LEVELS.indexOf(level))}
+                            aria-pressed={active}
+                            className={`pricing-design-btn${active ? " is-active" : ""}`}
+                          >
+                            {level}
+                            <span>
+                              {upcharge ? `+${inr(upcharge)} est.` : "included"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="pricing-field__hint">
+                      {tier.design} design included with {tier.name}
+                    </p>
+                  </div>
+
+                  {/* Features checkboxes */}
+                  <div>
+                    <span className="pricing-field__label">Features</span>
+                    <div className="pricing-feature-grid">
+                      {FEATURE_IDS.map((id) => {
+                        const cfg = FEATURES[id];
+                        const included = tier.features.includes(id);
+                        const active = featuresState[id];
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => toggleFeature(id)}
+                            aria-pressed={active}
+                            className={`pricing-feature${active ? " is-active" : ""}`}
+                          >
+                            <span>
+                              <span className="pricing-feature__label">{cfg.label}</span>
+                              <span className="pricing-feature__meta">
+                                {cfg.recurring ? `${inr(cfg.fee)}/month · est.` : `+ ${inr(cfg.fee)} est.`}
+                                {included ? " · included in package" : ""}
+                              </span>
+                            </span>
+                            <span className="pricing-feature__check" aria-hidden="true">
+                              {active ? <CheckCircle className="h-3.5 w-3.5" /> : ""}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Delivery Timeframe */}
+                  <div>
+                    <span className="pricing-field__label">Delivery timeframe</span>
+                    <div className="pricing-delivery-grid">
+                      {[
+                        { id: "Standard" as DeliveryChoice, label: "Standard delivery", days: COUNT_DOWN_STANDARD, feeNote: "Included" },
+                        { id: "Express" as DeliveryChoice, label: "Express delivery", days: COUNT_DOWN_EXPRESS, feeNote: `+${inr(EXPRESS_FEE)} est.` },
+                      ].map((opt) => {
+                        const active = delivery === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setDelivery(opt.id)}
+                            aria-pressed={active}
+                            className={`pricing-delivery${active ? " is-active" : ""}`}
+                          >
+                            <span className="pricing-delivery__label">{opt.label}</span>
+                            <span className="pricing-delivery__meta">
+                              {opt.days} ({opt.feeNote})
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
-              {/* Delivery badge */}
-              <div className="border-4 border-black bg-white p-5 shadow-[4px_4px_0px_#000] rotate-1 flex items-start gap-3">
-                <Rocket className="h-6 w-6 stroke-2 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-black uppercase">{delivery === "Express" ? "Express delivery" : "Standard delivery"}</h4>
-                  <p className="text-xs mt-1 leading-snug font-mono uppercase">
-                    {delivery === "Express" ? `${COUNT_DOWN_EXPRESS} · priority lane` : `${COUNT_DOWN_STANDARD} · included in price`}
+              {/* LIVE ESTIMATE OUTPUT & CTA */}
+              <div className="pricing-panel__estimate">
+
+                {/* Display Box */}
+                <div className="pricing-estimate">
+                  <span className="pricing-field__label">Your estimate</span>
+
+                  <div className="pricing-estimate__total">
+                    <span className="pricing-estimate__total-label">Estimated total</span>
+                    <span aria-live="polite" className="pricing-estimate__amount">
+                      {inr(oneTime)}
+                    </span>
+                  </div>
+                  <p className="pricing-estimate__fine">
+                    This is an estimate. Final quote confirmed after a quick scope call.
                   </p>
+
+                  {/* Breakdown */}
+                  <ul className="pricing-estimate__list">
+                    {items.map((item, i) => (
+                      <li
+                        key={i}
+                        className={item.recurring ? "is-recurring" : ""}
+                      >
+                        {item.recurring ? "Recurring: " : ""}{item.text}
+                      </li>
+                    ))}
+                    <li className="is-total">
+                      Estimated total (one-time): {inr(oneTime)}
+                    </li>
+                    {monthly > 0 && (
+                      <li className="is-recurring">
+                        Recurring estimate: {inr(monthly)}/month
+                      </li>
+                    )}
+                    <li className="is-muted">
+                      Industry: {industry}
+                    </li>
+                  </ul>
+
+                  {isSubmitted ? (
+                    <div role="status" className="pricing-status">
+                      Request ready. Your email app should open with the details filled in.
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="pricing-submit"
+                      onClick={submitRequest}
+                    >
+                      Send this request <Sparkles className="h-5 w-5 fill-current" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
+
+                {/* Trust note */}
+                <div className="pricing-trust">
+                  <MessageSquare aria-hidden="true" />
+                  <div>
+                    <h4>Transparent billing</h4>
+                    <p>
+                      No hidden margins. You choose what you need, and the final quote is agreed
+                      before any work starts.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Delivery badge */}
+                <div className="pricing-delivery-card">
+                  <Rocket aria-hidden="true" />
+                  <div>
+                    <h4>{delivery === "Express" ? "Express delivery" : "Standard delivery"}</h4>
+                    <p>
+                      {delivery === "Express" ? `${COUNT_DOWN_EXPRESS} · priority lane` : `${COUNT_DOWN_STANDARD} · included in price`}
+                    </p>
+                  </div>
+                </div>
+
               </div>
 
             </div>
+          )}
 
-          </div>
-        )}
-
+        </div>
       </div>
     </section>
   );
