@@ -63,8 +63,8 @@ html, body {
    -------------------------------------------------------------------------- */
 
 .about-section {
-  height: 460vh;
-  min-height: 2600px;
+  height: 400vh;
+  min-height: 2400px;
   background: #000;
   --about-ink: #111111;
   --about-muted: rgba(17, 17, 17, 0.62);
@@ -76,6 +76,7 @@ html, body {
   --about-ink: #111111;
   --about-muted: rgba(17, 17, 17, 0.62);
   --about-edge-rgb: 255 255 255;
+  --about-next-rgb: 255 255 255;
   isolation: isolate;
 }
 
@@ -95,36 +96,130 @@ html, body {
 
 .about-portrait__media {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 50%;
-  width: min(68vw, 1160px);
-  height: 100%;
-  transform: translateX(-50%);
+  width: min(480px, 80vw);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  background: rgb(var(--about-next-rgb));
 }
 
-.portrait-dissolve {
+.portrait-blinds {
   position: absolute;
   inset: 0;
-  overflow: hidden;
 }
 
-.portrait-dissolve__base {
+.about-portrait__layer {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 24%;
-  display: block;
-}
-
-.portrait-dissolve__layer {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  object-position: center;
   display: block;
   will-change: opacity;
+}
+
+.about-portrait__blinds {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.about-portrait__blind {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 10%;
+  overflow: hidden;
+  transform-origin: center top;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.about-portrait__blind:nth-child(even) {
+  transform-origin: center bottom;
+}
+
+.about-portrait__blind-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1000%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  will-change: transform;
+}
+
+.about-edge-blur {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  height: 12vh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.about-edge-blur--top {
+  top: 0;
+}
+
+.about-edge-blur--bottom {
+  bottom: 0;
+}
+
+.about-edge-blur__layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backdrop-filter: blur(var(--blur, 2px));
+  -webkit-backdrop-filter: blur(var(--blur, 2px));
+  mask-image: var(--mask);
+  -webkit-mask-image: var(--mask);
+}
+
+.about-edge-blur--top .about-edge-blur__layer:nth-child(1) {
+  --blur: 2px;
+  --mask: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
+}
+
+.about-edge-blur--top .about-edge-blur__layer:nth-child(2) {
+  --blur: 4px;
+  --mask: linear-gradient(to bottom, #000 0%, #000 52%, transparent 82%);
+}
+
+.about-edge-blur--top .about-edge-blur__layer:nth-child(3) {
+  --blur: 8px;
+  --mask: linear-gradient(to bottom, #000 0%, #000 34%, transparent 64%);
+}
+
+.about-edge-blur--top .about-edge-blur__layer:nth-child(4) {
+  --blur: 16px;
+  --mask: linear-gradient(to bottom, #000 0%, transparent 42%);
+}
+
+.about-edge-blur--bottom .about-edge-blur__layer:nth-child(1) {
+  --blur: 2px;
+  --mask: linear-gradient(to top, #000 0%, #000 70%, transparent 100%);
+}
+
+.about-edge-blur--bottom .about-edge-blur__layer:nth-child(2) {
+  --blur: 4px;
+  --mask: linear-gradient(to top, #000 0%, #000 52%, transparent 82%);
+}
+
+.about-edge-blur--bottom .about-edge-blur__layer:nth-child(3) {
+  --blur: 8px;
+  --mask: linear-gradient(to top, #000 0%, #000 34%, transparent 64%);
+}
+
+.about-edge-blur--bottom .about-edge-blur__layer:nth-child(4) {
+  --blur: 16px;
+  --mask: linear-gradient(to top, #000 0%, transparent 42%);
 }
 
 .about-grain {
@@ -152,6 +247,13 @@ html, body {
   inset: 0;
   z-index: 40;
   pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+/* The About section has its own four-layer edge blur, so the fixed site-wide
+   blur is faded out while that section is pinned. */
+html.about-has-edge-blur .progressive-blur-edges {
+  opacity: 0;
 }
 
 .progressive-blur {
@@ -523,7 +625,7 @@ html, body {
   transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1), background 240ms ease;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .about-section {
     height: 400vh;
     min-height: 2400px;
@@ -533,8 +635,9 @@ html, body {
     /* The card stage labels and underline make each card taller, so the
        portrait is a shorter banner that fits cleanly between the two cards. */
     top: 48.5%;
-    width: min(72vw, 320px);
-    height: clamp(148px, 22svh, 240px);
+    width: min(76vw, 420px);
+    height: auto;
+    aspect-ratio: 16 / 9;
     transform: translate(-50%, -50%);
   }
 
@@ -548,7 +651,7 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 5.75rem 1rem;
+    padding: 6.5rem 1rem 7.5rem;
     opacity: 0;
     visibility: hidden;
     transition: opacity 320ms ease, visibility 320ms ease;
@@ -651,6 +754,101 @@ html, body {
 
   .about-card {
     transition: none;
+  }
+}
+
+/* Reduced-motion / no-pin layout: every stage is shown as its own block, with
+   no scroll-scrubbed transforms and no blind animation. */
+.about-section--static {
+  height: auto;
+  min-height: 0;
+  background: #000;
+}
+
+.about-static {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.about-static__stage {
+  position: relative;
+  padding: clamp(5.5rem, 10vw, 8rem) clamp(1.25rem, 6vw, 5rem)
+    clamp(3rem, 6vw, 5rem);
+  color: var(--about-ink);
+}
+
+.about-static__stage[data-tone="light"] {
+  --about-ink: #111111;
+  --about-muted: rgba(17, 17, 17, 0.62);
+}
+
+.about-static__stage[data-tone="dark"] {
+  --about-ink: #ffffff;
+  --about-muted: rgba(255, 255, 255, 0.72);
+}
+
+.about-static__chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto clamp(2rem, 4vw, 3rem);
+}
+
+.about-static__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.about-static__portrait {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.about-static__portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.about-static__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.about-static__caption {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: clamp(2rem, 4vw, 3rem) auto 0;
+}
+
+@media (min-width: 900px) {
+  .about-static__body {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+
+  .about-static__portrait {
+    margin: 0;
   }
 }
 
