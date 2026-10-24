@@ -24,7 +24,7 @@ html {
 }
 
 section[id] {
-  scroll-margin-top: 4rem;
+  scroll-margin-top: 0;
 }
 
 /* Safety net: never let any element force a horizontal scrollbar.
@@ -96,13 +96,22 @@ html, body {
 
 .about-portrait__media {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: min(480px, 80vw);
-  aspect-ratio: 16 / 9;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  transform: translate(-50%, -50%);
   background: rgb(var(--about-next-rgb));
+}
+
+.about-portrait__layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  display: block;
+  will-change: opacity;
 }
 
 .portrait-blinds {
@@ -133,13 +142,10 @@ html, body {
   width: 100%;
   height: 10%;
   overflow: hidden;
-  transform-origin: center top;
-  will-change: transform;
+  will-change: clip-path;
   backface-visibility: hidden;
-}
-
-.about-portrait__blind:nth-child(even) {
-  transform-origin: center bottom;
+  /* Start fully closed — JS sets the opening clip-path per frame */
+  clip-path: inset(50% 0 50% 0);
 }
 
 .about-portrait__blind-image {
@@ -149,7 +155,7 @@ html, body {
   width: 100%;
   height: 1000%;
   object-fit: cover;
-  object-position: center;
+  object-position: center 20%;
   display: block;
   will-change: transform;
 }
@@ -632,13 +638,18 @@ html.about-has-edge-blur .progressive-blur-edges {
   }
 
   .about-portrait__media {
-    /* The card stage labels and underline make each card taller, so the
-       portrait is a shorter banner that fits cleanly between the two cards. */
-    top: 48.5%;
+    /* On mobile, keep a framed 4:5 box instead of full-viewport */
+    position: absolute;
+    top: 50%;
+    left: 50%;
     width: min(76vw, 420px);
     height: auto;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 5;
     transform: translate(-50%, -50%);
+  }
+
+  .about-portrait__layer {
+    object-position: center;
   }
 
   .about-cards {
@@ -850,266 +861,6 @@ html.about-has-edge-blur .progressive-blur-edges {
   .about-static__portrait {
     margin: 0;
   }
-}
-
-/* --------------------------------------------------------------------------
-   PROCESS — white, pinned Three.js camera ride through the four stages
-   -------------------------------------------------------------------------- */
-
-.process-section {
-  position: relative;
-  background: #ffffff;
-  color: #111111;
-}
-
-.process3d-section {
-  position: relative;
-  height: 370vh;
-  min-height: 2300px;
-}
-
-.process3d-pin {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  overflow: hidden;
-}
-
-.process3d-header {
-  position: absolute;
-  top: 5.5svh;
-  right: 20px;
-  left: 20px;
-  z-index: 4;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  margin: 0;
-}
-
-.process-header__lockup {
-  max-width: min(64vw, 560px);
-}
-
-.process-eyebrow {
-  display: block;
-  margin-bottom: 12px;
-  font-family: var(--font-mono, "Space Grotesk", monospace);
-  font-size: 10px;
-  letter-spacing: 0.34em;
-  text-transform: uppercase;
-  color: rgba(17, 17, 17, 0.62);
-}
-
-.process-heading {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(2rem, 8vw, 4.25rem);
-  line-height: 0.94;
-  letter-spacing: -0.035em;
-  color: #111111;
-}
-
-.process-counter {
-  margin-top: 4px;
-  font-family: var(--font-mono, "Space Grotesk", monospace);
-  font-size: 11px;
-  line-height: 1;
-  letter-spacing: 0.18em;
-  color: #111111;
-  white-space: nowrap;
-}
-
-.process-counter__total {
-  margin-left: 4px;
-  color: rgba(17, 17, 17, 0.62);
-}
-
-.process3d-stage {
-  position: absolute;
-  inset: 0;
-}
-
-.process3d-canvas {
-  position: absolute;
-  top: 25svh;
-  right: 0;
-  left: 0;
-  z-index: 1;
-  height: 42svh;
-  pointer-events: none;
-}
-
-.process3d-canvas__surface {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.process3d-panels {
-  position: absolute;
-  top: 68svh;
-  right: 20px;
-  left: 20px;
-  z-index: 2;
-  height: 28svh;
-  pointer-events: none;
-}
-
-.process3d-panel {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  border-top: 1px solid rgba(17, 17, 17, 0.18);
-  padding-top: 14px;
-}
-
-.process3d-panel__index {
-  display: block;
-  font-family: var(--font-mono, "Space Grotesk", monospace);
-  font-size: 10px;
-  line-height: 1;
-  letter-spacing: 0.24em;
-  color: rgba(17, 17, 17, 0.55);
-}
-
-.process3d-panel__title {
-  margin: 8px 0 0;
-  font-family: var(--font-heading);
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(1.35rem, 5.5vw, 1.8rem);
-  line-height: 1.02;
-  letter-spacing: -0.02em;
-}
-
-.process3d-panel__rule {
-  display: block;
-  width: 24px;
-  height: 1px;
-  margin-top: 10px;
-  background: currentColor;
-  opacity: 0.35;
-}
-
-.process3d-panel__body {
-  margin: 8px 0 0;
-  max-width: 34ch;
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 400;
-  line-height: 1.5;
-  color: rgba(17, 17, 17, 0.66);
-}
-
-@media (min-width: 768px) {
-  .process3d-header {
-    top: 10svh;
-    right: 5.5vw;
-    left: 5.5vw;
-    gap: 32px;
-  }
-
-  .process-header__lockup {
-    max-width: 620px;
-  }
-
-  .process3d-canvas {
-    inset: 0;
-    height: auto;
-  }
-
-  .process3d-panels {
-    position: absolute;
-    inset: 0;
-    height: auto;
-  }
-
-  .process3d-panel {
-    position: absolute;
-    inset: auto;
-    top: 0;
-    left: 0;
-    width: clamp(260px, 23vw, 340px);
-    padding: 18px 20px 20px;
-    border: 1px solid rgba(17, 17, 17, 0.14);
-    border-top: 1px solid rgba(17, 17, 17, 0.14);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.86);
-    box-shadow: 0 24px 70px -38px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    will-change: transform, opacity;
-  }
-
-  .process3d-panel__title {
-    font-size: clamp(1.5rem, 2.2vw, 2rem);
-  }
-}
-
-/* A finished, static composition when motion is reduced or WebGL is absent. */
-.process3d-section[data-static="true"] {
-  height: auto;
-  min-height: 0;
-}
-
-.process3d-section[data-static="true"] .process3d-pin {
-  position: relative;
-  height: auto;
-  overflow: visible;
-}
-
-.process3d-section[data-static="true"] .process3d-header {
-  position: relative;
-  top: auto;
-  right: auto;
-  left: auto;
-  padding: 112px 24px 32px;
-}
-
-.process3d-section[data-static="true"] .process3d-stage {
-  position: relative;
-  inset: auto;
-}
-
-.process3d-section[data-static="true"] .process3d-canvas {
-  position: relative;
-  inset: auto;
-  height: clamp(280px, 52svh, 560px);
-}
-
-.process3d-section[data-static="true"] .process3d-panels {
-  position: relative;
-  inset: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  height: auto;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 28px 24px 88px;
-}
-
-.process3d-section[data-static="true"] .process3d-panel {
-  position: relative;
-  inset: auto;
-  width: auto;
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: none !important;
-  border: 0;
-  border-top: 1px solid rgba(17, 17, 17, 0.18);
-  border-radius: 0;
-  padding: 14px 0 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 /* --------------------------------------------------------------------------

@@ -1,6 +1,5 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * @license SPDX-License-Identifier: Apache-2.0
  *
  * A package card with three stacked transform layers:
  *   1. .pricing-card        resting depth (translateZ + rotateY), from CSS
@@ -12,7 +11,7 @@
  */
 
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
-import { CheckCircle } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import gsap from "gsap";
 
 const MAX_TILT = 8;
@@ -20,21 +19,21 @@ const TILT_QUERY =
   "(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
 
 interface PricingCardProps {
+  index: number;
   name: string;
   price: string;
   blurb: string;
   features: string[];
-  active: boolean;
-  onSelect: () => void;
+  ctaHref: string;
 }
 
 export function PricingCard({
+  index,
   name,
   price,
   blurb,
   features,
-  active,
-  onSelect,
+  ctaHref,
 }: PricingCardProps) {
   const tiltRef = useRef<HTMLDivElement | null>(null);
   const quickRef = useRef<{
@@ -117,6 +116,9 @@ export function PricingCard({
     }, 500);
   };
 
+  const slug = name.replace(/\s+/g, "-").toLowerCase();
+  const packageNumber = String(index + 1).padStart(2, "0");
+
   return (
     <div className="pricing-card">
       <div className="pricing-card__float">
@@ -128,15 +130,19 @@ export function PricingCard({
           onPointerCancel={handlePointerLeave}
         >
           <article
-            className={`pricing-card__body${active ? " is-active" : ""}`}
-            aria-labelledby={`pricing-card-${name.replace(/\s+/g, "-").toLowerCase()}`}
+            className="pricing-card__body"
+            aria-labelledby={`pricing-card-${slug}`}
           >
             <span className="pricing-card__accent" aria-hidden="true" />
 
-            <h3
-              id={`pricing-card-${name.replace(/\s+/g, "-").toLowerCase()}`}
-              className="pricing-card__name"
-            >
+            <div className="pricing-card__topline">
+              <span className="pricing-card__index">
+                PACKAGE {packageNumber}
+              </span>
+              <span className="pricing-card__one-time">ONE-TIME</span>
+            </div>
+
+            <h3 id={`pricing-card-${slug}`} className="pricing-card__name">
               {name}
             </h3>
             <p className="pricing-card__blurb">{blurb}</p>
@@ -144,7 +150,7 @@ export function PricingCard({
             <div className="pricing-card__price-block">
               <span className="pricing-card__price">{price}</span>
               <span className="pricing-card__note">
-                One-time project estimate
+                Project estimate, in INR
               </span>
             </div>
 
@@ -156,15 +162,14 @@ export function PricingCard({
               ))}
             </ul>
 
-            <button
-              type="button"
-              onClick={onSelect}
-              aria-pressed={active}
-              className={`pricing-card__button${active ? " is-selected" : ""}`}
+            <a
+              href={ctaHref}
+              className="pricing-card__button"
+              aria-label={`Talk about the ${name} package`}
             >
-              {active ? <CheckCircle aria-hidden="true" size={15} /> : null}
-              {active ? "Package selected" : "Select this package"}
-            </button>
+              Start with this package
+              <ArrowUpRight aria-hidden="true" size={15} />
+            </a>
           </article>
         </div>
       </div>

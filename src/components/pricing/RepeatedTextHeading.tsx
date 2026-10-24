@@ -24,15 +24,13 @@ interface RowConfig {
   /** -1 travels left as the page scrolls down, 1 travels right. */
   direction: -1 | 1;
   speed: number;
-  /** Hidden below 768px so mobile shows three rows. */
-  optional?: boolean;
 }
 
 const ROWS: RowConfig[] = [
   { direction: -1, speed: 0.6 },
   { direction: 1, speed: 0.9 },
   { direction: -1, speed: 0.7 },
-  { direction: 1, speed: 1.1, optional: true },
+  { direction: 1, speed: 1.1 },
 ];
 
 function RowHalf({ copyIndex }: { copyIndex: number }) {
@@ -108,9 +106,9 @@ export function RepeatedTextHeading() {
       };
     };
 
-    // Desktop: four rows. Mobile: three rows (the fourth is display:none).
+    // All four rows stay visible at every breakpoint.
     mm.add("(min-width: 768px)", () => build([0, 1, 2, 3]));
-    mm.add("(max-width: 767px)", () => build([0, 1, 2]));
+    mm.add("(max-width: 767px)", () => build([0, 1, 2, 3]));
 
     // Web fonts change the phrase width; re-measure once they settle.
     let cancelled = false;
@@ -133,12 +131,8 @@ export function RepeatedTextHeading() {
         {HEADING_TEXT}
       </h2>
 
-      {ROWS.map((row, index) => (
-        <div
-          key={index}
-          className={`pricing-row${row.optional ? " pricing-row--optional" : ""}`}
-          aria-hidden="true"
-        >
+      {ROWS.map((_, index) => (
+        <div key={index} className="pricing-row" aria-hidden="true">
           <div className="pricing-row__track" data-row={index}>
             <RowHalf copyIndex={index} />
             <RowHalf copyIndex={index} />

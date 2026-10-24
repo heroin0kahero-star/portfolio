@@ -1,11 +1,11 @@
 /**
  * @license SPDX-License-Identifier: Apache-2.0
  *
- * Three stacked 16:9 portraits with a scroll-scrubbed horizontal-blind
- * transition. The outgoing portrait is rendered as ten horizontal slices;
- * each slice collapses toward its top or bottom edge, revealing the incoming
- * portrait underneath. The portrait elements themselves are never scaled, so
- * they cannot stretch or squash.
+ * Three stacked portraits with a scroll-scrubbed horizontal-blind transition.
+ * The outgoing portrait is rendered as ten horizontal bands; each band opens
+ * from its centre line outward using clip-path: inset(...), revealing the
+ * incoming portrait underneath. No scale is applied to any element that
+ * contains an image, so the portraits can never stretch or squash.
  */
 
 import {
@@ -76,7 +76,15 @@ export const PortraitBlinds = forwardRef<
           (state.progress - stripeIndex * STAGGER) / DURATION,
         );
         const eased = easeInOutCubic(local);
-        stripe.style.transform = `scaleY(${(1 - eased).toFixed(4)})`;
+        // Each band opens from its centre line outward.
+        // Closed: inset(mid% 0 100-mid% 0) → Open: inset(top% 0 100-bottom% 0)
+        const bandTop = stripeIndex * (100 / STRIPES);
+        const bandBottom = 100 - bandTop - 100 / STRIPES;
+        // When eased=0 (closed): top=mid, bottom=100-mid (fully collapsed)
+        // When eased=1 (open): top=bandTop, bottom=bandBottom (full strip)
+        const openTop = bandTop + (100 / STRIPES) * (1 - eased) / 2;
+        const openBottom = bandBottom - (100 / STRIPES) * (1 - eased) / 2;
+        stripe.style.clipPath = `inset(${openTop.toFixed(2)}% 0 ${openBottom.toFixed(2)}% 0)`;
       });
     });
   };

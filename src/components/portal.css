@@ -1,0 +1,35 @@
+/* --------------------------------------------------------------------------
+   SECTION PORTALS — window reveal between consecutive sections
+   -------------------------------------------------------------------------- */
+
+.portal-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+.portal-stage__frame,
+.portal-stage__content {
+  position: relative;
+  width: 100%;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+}
+
+.portal-stage--entering .portal-stage__frame {
+  will-change: clip-path;
+}
+
+.portal-stage--entering .portal-stage__content {
+  will-change: transform, opacity;
+}
+
+.portal-stage--exiting .portal-stage__frame {
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-stage__frame,
+  .portal-stage__content {
+    will-change: auto;
+  }
+}

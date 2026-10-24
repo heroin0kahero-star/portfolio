@@ -1,0 +1,502 @@
+/* --------------------------------------------------------------------------
+   PROCESS — pinned pencil flight with five focused CSS3D stage cards
+   -------------------------------------------------------------------------- */
+
+.process-section {
+  position: relative;
+  background: #ffffff;
+  color: #1a1a1a;
+  --process-ink: #1a1a1a;
+  --process-pencil: #2a2a2a;
+  --process-muted: rgba(26, 26, 26, 0.58);
+}
+
+/* The tall section supplies the scroll distance. The inner pin is sticky, which
+   keeps the camera locked without position: fixed fighting the portal frame. */
+.process3d-section {
+  height: 550svh;
+  background: #ffffff;
+}
+
+.process3d-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background: #ffffff;
+}
+
+.process3d-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.process3d-canvas__surface {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* CSS3DRenderer owns this layer and moves the cards into its own camera node.
+   Keep it above the WebGL canvas but below the heading and progress UI. */
+.process3d-cards {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Stage cards
+   -------------------------------------------------------------------------- */
+
+.stage-card {
+  position: absolute;
+  width: 420px;
+  height: 260px;
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.stage-card__inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 23px 26px 21px;
+  border: 1px solid #1a1a1a;
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow:
+    0 22px 55px -34px rgba(26, 26, 26, 0.45),
+    0 1px 0 rgba(26, 26, 26, 0.06);
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.stage-card__topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.stage-card__index {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 2.85rem;
+  line-height: 0.78;
+  letter-spacing: -0.05em;
+  color: #1a1a1a;
+}
+
+.stage-card__kicker {
+  margin-top: 3px;
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 8px;
+  line-height: 1;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.48);
+}
+
+.stage-card__title {
+  margin: 16px 0 0;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.95rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #1a1a1a;
+}
+
+.stage-card__body {
+  margin: 9px 0 0;
+  max-width: 36ch;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.46;
+  color: rgba(26, 26, 26, 0.66);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.stage-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stage-card__tags li {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 4px 8px 3px;
+  border: 1px solid rgba(26, 26, 26, 0.28);
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 7.5px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.66);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Heading and progress
+   -------------------------------------------------------------------------- */
+
+.process3d-header {
+  position: absolute;
+  top: clamp(76px, 9svh, 112px);
+  right: clamp(24px, 6vw, 88px);
+  left: clamp(24px, 6vw, 88px);
+  z-index: 6;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.process-header__lockup {
+  max-width: min(62vw, 600px);
+}
+
+.process-eyebrow {
+  display: block;
+  margin-bottom: 12px;
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 10px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.52);
+}
+
+.process-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2.35rem, 6.5vw, 5.2rem);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  color: #1a1a1a;
+}
+
+.process-intro {
+  max-width: 36ch;
+  margin: 18px 0 0;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(26, 26, 26, 0.56);
+}
+
+.process-counter {
+  margin-top: 4px;
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.process-counter__total {
+  margin-left: 4px;
+  color: rgba(26, 26, 26, 0.4);
+}
+
+.process3d-progress {
+  position: absolute;
+  right: clamp(24px, 6vw, 88px);
+  bottom: 3.8svh;
+  left: clamp(24px, 6vw, 88px);
+  z-index: 6;
+  display: flex;
+  gap: clamp(4px, 1.4vw, 18px);
+  pointer-events: none;
+}
+
+.process-progress-step {
+  flex: 1;
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(26, 26, 26, 0.16);
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: rgba(26, 26, 26, 0.32);
+  transition:
+    border-color 240ms ease,
+    color 240ms ease;
+}
+
+.process-progress-step[data-passed="true"] {
+  border-top-color: #1a1a1a;
+  color: #1a1a1a;
+}
+
+.process-progress-step[data-active="true"] .process-progress-step__num {
+  font-weight: 700;
+}
+
+.process-progress-step__num {
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.06em;
+}
+
+.process-progress-step__label {
+  overflow: hidden;
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   Mobile
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+  .process3d-section {
+    height: 500svh;
+  }
+
+  .process3d-header {
+    top: 76px;
+    gap: 12px;
+  }
+
+  .process-header__lockup {
+    max-width: calc(100vw - 96px);
+  }
+
+  .process-title {
+    font-size: clamp(2.15rem, 10.8vw, 3.4rem);
+  }
+
+  .process-intro {
+    display: none;
+  }
+
+  .stage-card {
+    width: 300px;
+    height: 250px;
+  }
+
+  .stage-card__inner {
+    padding: 20px 21px 18px;
+  }
+
+  .stage-card__index {
+    font-size: 2.35rem;
+  }
+
+  .stage-card__title {
+    margin-top: 13px;
+    font-size: 1.65rem;
+  }
+
+  .stage-card__body {
+    font-size: 0.82rem;
+    line-height: 1.42;
+  }
+
+  .stage-card__tags {
+    gap: 5px;
+  }
+
+  .stage-card__tags li {
+    min-height: 18px;
+    padding: 3px 6px 2px;
+    font-size: 7px;
+  }
+
+  .process-progress-step__label {
+    display: none;
+  }
+
+  .process3d-progress {
+    bottom: 3.2svh;
+    gap: 6px;
+  }
+
+  .process-progress-step {
+    justify-content: center;
+    padding-top: 7px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Static fallback: reduced motion, or no WebGL. Five cards in a plain list,
+   with the pencil line drawn in full once when the art enters the viewport.
+   -------------------------------------------------------------------------- */
+
+.process-static {
+  padding: 112px 24px 96px;
+}
+
+.process-static__inner {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.process-static__header {
+  max-width: 760px;
+}
+
+.process-static__header .process-title {
+  font-size: clamp(2.5rem, 7vw, 5.4rem);
+}
+
+.process-static__art {
+  height: 118px;
+  margin-top: 34px;
+  opacity: 0.7;
+}
+
+.process-static__art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.process-static__art path {
+  fill: none;
+  stroke: #2a2a2a;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.6s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.process-static__art.is-drawn path {
+  stroke-dashoffset: 0;
+}
+
+.process-static__art .process-static__art-ghost {
+  stroke-width: 4;
+  opacity: 0.1;
+}
+
+.process-static__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+  gap: 16px;
+  margin-top: 42px;
+}
+
+.process-static__card {
+  display: flex;
+  min-height: 250px;
+  flex-direction: column;
+  padding-top: 17px;
+  border-top: 1px solid #1a1a1a;
+}
+
+.process-static__card-index {
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  color: rgba(26, 26, 26, 0.44);
+}
+
+.process-static__card-title {
+  margin: 12px 0 0;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.85rem;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.process-static__card-body {
+  margin: 14px 0 0;
+  max-width: 32ch;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(26, 26, 26, 0.62);
+}
+
+.process-static__card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: auto 0 0;
+  padding: 16px 0 0;
+  list-style: none;
+}
+
+.process-static__card-tags li {
+  padding: 4px 7px 3px;
+  border: 1px solid rgba(26, 26, 26, 0.28);
+  font-family: var(--font-mono, "Space Grotesk", monospace);
+  font-size: 7.5px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.66);
+}
+
+@media (max-width: 767px) {
+  .process-static {
+    padding: 94px 22px 82px;
+  }
+
+  .process-static__art {
+    height: 86px;
+    margin-top: 26px;
+  }
+
+  .process-static__grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 30px;
+  }
+
+  .process-static__card {
+    min-height: 0;
+    padding: 18px 0 24px;
+  }
+
+  .process-static__card:last-child {
+    padding-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .process-static__art path {
+    transition-duration: 1.2s;
+  }
+}
