@@ -1,144 +1,131 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * @license SPDX-License-Identifier: Apache-2.0
  *
- * Repeated-text heading rows for the Pricing section, built from scratch on
- * the Codrops "Text Repetition Scroll Effect" idea: oversized repeated copy,
- * duplicated halves for a seamless loop, and alternating scroll-linked
- * horizontal travel.
- *
- * The visible rows are decorative (aria-hidden). A visually hidden h2 carries
- * the real heading so screen readers hear the phrase once, not 16 times.
+ * "Price" heading with the Codrops "Text Repetition Scroll Effect" (demo 3)
+ * translated into a React-friendly helper. The last copy is solid; the eight
+ * copies behind it are outlined and translate vertically on a scroll-scrubbed
+ * GSAP timeline.
  */
 
 import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
+const TOTAL = 9;
+const TY_INC = 14;
+const DELAY_INC = 0.08;
 
-const HEADING_TEXT = "Clear pricing, no surprises";
-const REPEATS_PER_HALF = 2;
+/**
+ * Port of src/js/demo3/repeatTextScrollFx.js. Returns a cleanup function that
+ * restores the original markup (React StrictMode mounts effects twice).
+ */
+export function initRepeatText(el: HTMLElement): () => void {
+  const source = el.dataset.repSource ?? el.innerHTML;
+  el.dataset.repSource = source;
 
-interface RowConfig {
-  /** -1 travels left as the page scrolls down, 1 travels right. */
-  direction: -1 | 1;
-  speed: number;
-}
+  const half = Math.floor(TOTAL / 2);
+  let html = "";
 
-const ROWS: RowConfig[] = [
-  { direction: -1, speed: 0.6 },
-  { direction: 1, speed: 0.9 },
-  { direction: -1, speed: 0.7 },
-  { direction: 1, speed: 1.1 },
-];
+  for (let i = 0; i < TOTAL; i++) {
+    let ty: number;
+    let delay: number;
 
-function RowHalf({ copyIndex }: { copyIndex: number }) {
-  return (
-    <div className="pricing-row__half" aria-hidden="true">
-      {Array.from({ length: REPEATS_PER_HALF }).map((_, repeat) => (
-        <span className="pricing-row__item" key={`${copyIndex}-${repeat}`}>
-          <span>{HEADING_TEXT}</span>
-          <span className="pricing-row__dot" />
-        </span>
-      ))}
-    </div>
-  );
+    if (i === TOTAL - 1) {
+      ty = 0;
+      delay = 0;
+    } else if (i < half) {
+      ty = half * TY_INC - TY_INC * i;
+      delay = DELAY_INC * (half - i) - DELAY_INC;
+    } else {
+      const j = i - half;
+      ty = -(half * TY_INC - j * TY_INC);
+      delay = DELAY_INC * (half - j) - DELAY_INC;
+    }
+
+    html += `<span data-ty="${ty}" data-delay="${delay}" aria-hidden="true">${source}</span>`;
+  }
+
+  el.innerHTML = html;
+  el.classList.add("text-rep");
+
+  const copies = [...el.querySelectorAll<HTMLElement>("span")];
+  const outlines = copies.slice(0, -1);
+
+  // Reserve room for the translated copies. Using one copy's height means the
+  // padding stays stable through font swaps and resize.
+  const setPad = () => {
+    const copyH = copies[0]?.offsetHeight ?? 0;
+    const pad = (copyH * half * TY_INC) / 100;
+    gsap.set(el, { marginTop: pad, paddingBottom: pad });
+  };
+  setPad();
+  window.addEventListener("resize", setPad);
+
+  const tl = gsap
+    .timeline({ paused: true })
+    .to(
+      outlines,
+      {
+        duration: 1,
+        ease: "none",
+        startAt: { opacity: 0 },
+        opacity: 1,
+        yPercent: (_, target) => Number(target.dataset.ty),
+        delay: (_, target) => Number(target.dataset.delay),
+      },
+      0,
+    )
+    .to(outlines, {
+      duration: 1,
+      ease: "none",
+      opacity: 0,
+      yPercent: 0,
+      delay: (_, target) => Number(target.dataset.delay),
+    });
+
+  // 0 when the heading enters at the bottom of the viewport, 1 when it leaves
+  // the top.
+  const tick = () => {
+    const rect = el.getBoundingClientRect();
+    const progress =
+      (window.innerHeight - rect.top) / (window.innerHeight + rect.height);
+    tl.progress(Math.min(1, Math.max(0, progress)));
+  };
+
+  gsap.ticker.add(tick);
+  tick();
+
+  const fontsReady = document.fonts?.ready.then(() => setPad());
+
+  return () => {
+    window.removeEventListener("resize", setPad);
+    gsap.ticker.remove(tick);
+    tl.kill();
+    void fontsReady;
+    el.innerHTML = source;
+    el.classList.remove("text-rep");
+    gsap.set(el, { clearProps: "marginTop,paddingBottom" });
+  };
 }
 
 export function RepeatedTextHeading() {
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
 
   useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-
-    const tracks = Array.from(
-      root.querySelectorAll<HTMLElement>(".pricing-row__track"),
-    );
-    const mm = gsap.matchMedia();
-
-    const build = (rowIndexes: number[]) => {
-      const tweens: gsap.core.Tween[] = [];
-
-      rowIndexes.forEach((rowIndex) => {
-        const track = tracks[rowIndex];
-        const config = ROWS[rowIndex];
-        if (!track || !config) return;
-
-        const halfWidth = () =>
-          (track.firstElementChild as HTMLElement | null)?.offsetWidth ??
-          window.innerWidth;
-        const travel = () => window.innerWidth * 0.34 * config.speed;
-
-        tweens.push(
-          gsap.fromTo(
-            track,
-            {
-              x: () =>
-                -halfWidth() - (travel() / 2) * config.direction,
-            },
-            {
-              x: () =>
-                -halfWidth() + (travel() / 2) * config.direction,
-              ease: "none",
-              scrollTrigger: {
-                trigger: root,
-                start: "top bottom",
-                end: "bottom top",
-                scrub: 0.6,
-                invalidateOnRefresh: true,
-                onToggle: (self) => {
-                  track.style.willChange = self.isActive ? "transform" : "auto";
-                },
-              },
-            },
-          ),
-        );
-      });
-
-      return () => {
-        tweens.forEach((tween) => tween.kill());
-      };
-    };
-
-    // All four rows stay visible at every breakpoint.
-    mm.add("(min-width: 768px)", () => build([0, 1, 2, 3]));
-    mm.add("(max-width: 767px)", () => build([0, 1, 2, 3]));
-
-    // Web fonts change the phrase width; re-measure once they settle.
-    let cancelled = false;
-    void document.fonts?.ready.then(() => {
-      if (!cancelled) ScrollTrigger.refresh();
-    });
-
-    return () => {
-      cancelled = true;
-      mm.revert();
-      tracks.forEach((track) => {
-        track.style.willChange = "auto";
-      });
-    };
+    const el = headingRef.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    return initRepeatText(el);
   }, []);
 
   return (
-    <div className="pricing-heading" ref={rootRef}>
-      <h2 id="pricing-heading" className="sr-only">
-        {HEADING_TEXT}
-      </h2>
-
-      {ROWS.map((_, index) => (
-        <div key={index} className="pricing-row" aria-hidden="true">
-          <div className="pricing-row__track" data-row={index}>
-            <RowHalf copyIndex={index} />
-            <RowHalf copyIndex={index} />
-          </div>
-        </div>
-      ))}
-    </div>
+    <h2
+      id="pricing-heading"
+      ref={headingRef}
+      className="price__title"
+      data-text-rep
+      aria-label="Price"
+    >
+      Price
+    </h2>
   );
 }

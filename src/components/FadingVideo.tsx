@@ -8,15 +8,10 @@ import { FadingVideoProps } from "../types";
 
 export function FadingVideo({ src, className = "", style = {} }: FadingVideoProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const rafIdRef = useRef<number | null>(null);
-  const fadingOutRef = useRef<boolean>(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const FADE_MS = 500;
-  const FADE_OUT_LEAD = 0.55; // 0.55 seconds lead time for fade-out
 
-  const fadeTo = (targetOpacity: number, duration: number = FADE_MS) => {
-    const video = videoRef.current;
+  const fadeTo = (video: HTMLVideoElement, targetOpacity: number, duration: number = FADE_MS) => {
     if (!video) return;
 
     // Read current opacity from inline style
@@ -24,10 +19,6 @@ export function FadingVideo({ src, className = "", style = {} }: FadingVideoProp
     const startOpacity = parseFloat(currentOpacityStr);
     const opacityDiff = targetOpacity - startOpacity;
     const startTime = performance.now();
-
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-    }
 
     const step = (now: number) => {
       const elapsed = now - startTime;
@@ -38,84 +29,77 @@ export function FadingVideo({ src, className = "", style = {} }: FadingVideoProp
       video.style.opacity = currentOpacity.toFixed(4);
 
       if (progress < 1) {
-        rafIdRef.current = requestAnimationFrame(step);
-      } else {
-        rafIdRef.current = null;
+        requestAnimationFrame(step);
       }
     };
 
-    rafIdRef.current = requestAnimationFrame(step);
+    requestAnimationFrame(step);
   };
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Initially opacity is 0
     video.style.opacity = "0";
+    video.load();
 
-    const handleLoadedData = () => {
-      video.style.opacity = "0";
-      fadingOutRef.current = false;
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            fadeTo(1, FADE_MS);
-          })
-          .catch((err) => {
-            if (import.meta.env.DEV) console.warn("Autoplay blocked or video error:", err);
-          });
-      }
-    };
+    const playPromise = video.play();
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          // Video started playing - fade in
+          fadeTo(video, 1, FADE_MS);
+        })
+        .catch((err) => {
+          // Autoplay blocked - set up user interaction to resume
+          const resumeAfterInteraction = () => {
+            video.play()
+              .then(() => fadeTo(video, 1, FADE_MS))
+              .catch((e) => console.warn("Video play failed after interaction:", e));
+            document.removeEventListener("click", resumeAfterInteraction);
+            document.removeEventListener("keydown", resumeAfterInteraction);
+            document.removeEventListener("mousedown", resumeAfterInteraction);
+          };
+          document.addEventListener("click", resumeAfterInteraction);
+          document.addEventListener("keydown", resumeAfterInteraction);
+          document.addEventListener("mousedown", resumeAfterInteraction);
+        });
+    }
+  }, [src]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
 
     const handleTimeUpdate = () => {
       if (video.duration) {
         const remainingTime = video.duration - video.currentTime;
-        if (!fadingOutRef.current && remainingTime <= FADE_OUT_LEAD && remainingTime > 0) {
-          fadingOutRef.current = true;
-          fadeTo(0, FADE_MS);
+        if (remainingTime <= 0.55 && remainingTime > 0) {
+          fadeTo(video, 0, FADE_MS);
         }
       }
     };
 
     const handleEnded = () => {
       video.style.opacity = "0";
-      
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        video.currentTime = 0;
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              fadingOutRef.current = false;
-              fadeTo(1, FADE_MS);
-            })
-            .catch((err) => { if (import.meta.env.DEV) console.warn("Reset play failed:", err); });
-        }
-      }, 100);
+      video.currentTime = 0;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => fadeTo(video, 1, FADE_MS))
+          .catch((err) => console.warn("Reset play failed:", err));
+      }
     };
 
-    video.addEventListener("loadeddata", handleLoadedData);
     video.addEventListener("timeupdate", handleTimeUpdate);
     video.addEventListener("ended", handleEnded);
 
-    // If source changes, trigger load
-    video.load();
-
     return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      video.removeEventListener("loadeddata", handleLoadedData);
       video.removeEventListener("timeupdate", handleTimeUpdate);
       video.removeEventListener("ended", handleEnded);
     };
-  }, [src]);
+  }, []);
 
   return (
     <video
@@ -125,7 +109,10 @@ export function FadingVideo({ src, className = "", style = {} }: FadingVideoProp
       style={{
         ...style,
         willChange: "opacity",
-        pointerEvents: "none"
+        pointerEvents: "none",
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
       }}
       muted
       playsInline

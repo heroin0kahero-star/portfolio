@@ -239,9 +239,31 @@ export function LensDistortion({
     state.renderer = renderer;
 
     // Textures
+    // TextureLoader resolves its image asynchronously, so texture.image is null
+    // during the first render pass. Keep safe 1x1 placeholders and update them
+    // once each image has actually loaded.
+    const insideSize = new THREE.Vector2(1, 1);
+    const outsideSize = new THREE.Vector2(1, 1);
+
+    const syncTextureSize = (
+      texture: THREE.Texture,
+      target: THREE.Vector2,
+    ) => {
+      const image = texture.image as
+        | { width?: number; height?: number }
+        | null
+        | undefined;
+      if (!image?.width || !image?.height) return;
+      target.set(image.width, image.height);
+    };
+
     const loader = new THREE.TextureLoader();
-    const insideTexture = loader.load(insideSrc);
-    const outsideTexture = loader.load(outsideSrc);
+    const insideTexture = loader.load(insideSrc, (texture) => {
+      if (!cancelled) syncTextureSize(texture, insideSize);
+    });
+    const outsideTexture = loader.load(outsideSrc, (texture) => {
+      if (!cancelled) syncTextureSize(texture, outsideSize);
+    });
     insideTexture.colorSpace = THREE.SRGBColorSpace;
     outsideTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -250,8 +272,8 @@ export function LensDistortion({
       u_texture1: { value: insideTexture },
       u_texture2: { value: outsideTexture },
       u_meshSize: { value: new THREE.Vector2(W, H) },
-      u_textureSize1: { value: new THREE.Vector2(insideTexture.image.width, insideTexture.image.height) },
-      u_textureSize2: { value: new THREE.Vector2(outsideTexture.image.width, outsideTexture.image.height) },
+      u_textureSize1: { value: insideSize },
+      u_textureSize2: { value: outsideSize },
       u_mouse: { value: new THREE.Vector2(0, 0) },
       u_time: { value: 0 },
       u_squareSize: { value: squareSize },
@@ -315,19 +337,21 @@ export function LensDistortion({
       uniforms.u_time.value = time;
 
       renderer.render(scene, camera);
-      state.animId = requestAnimationFrame(tick);
+      if (!cancelled && state.running) {
+        state.animId = requestAnimationFrame(tick);
+      }
     };
 
     const startLoop = () => {
-      if (state.running) return;
+      if (cancelled || state.running) return;
       state.running = true;
       tick();
     };
 
     const stopLoop = () => {
-      if (!state.running) return;
       state.running = false;
       cancelAnimationFrame(state.animId);
+      state.animId = 0;
     };
 
     // IntersectionObserver to pause when off-screen

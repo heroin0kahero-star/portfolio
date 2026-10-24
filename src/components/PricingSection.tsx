@@ -1,22 +1,21 @@
 /**
  * @license SPDX-License-Identifier: Apache-2.0
  *
- * Pricing — lens distortion background, "Price" heading with demo 3 motion,
- * and four floating 3D package cards. No customizer, no live estimate: the
- * four starting points are the whole interaction, with a single route to the
- * contact section from each card.
+ * Pricing — a pinned horizontal track. The "Price" heading is the first panel,
+ * followed by the four package cards sliding over a still red rose. Motion is
+ * a GSAP ScrollTrigger pin + scrub port of GreenSock's "Horizontal snapping
+ * sections" pattern.
  */
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { ArrowUpRight } from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { PricingCard } from "./pricing/PricingCard";
 import { RepeatedTextHeading } from "./pricing/RepeatedTextHeading";
-import { LensDistortion } from "./pricing/LensDistortion";
 import "./pricing/pricing.css";
 
-// Portrait sources from About section
-const PORTRAIT_BW = "/images/projects/imeags/portrait-1-bw.webp";
-const PORTRAIT_RED = "/images/projects/imeags/portrait-2-red.webp";
+gsap.registerPlugin(ScrollTrigger);
 
 interface PricingPackage {
   id: string;
@@ -78,10 +77,12 @@ const PACKAGES: PricingPackage[] = [
 ];
 
 export default function PricingSection() {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
   const cardsRef = useRef<HTMLDivElement | null>(null);
 
   // Pause the idle float whenever the card row is off-screen.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const grid = cardsRef.current;
     if (!grid) return;
 
@@ -102,44 +103,68 @@ export default function PricingSection() {
     return () => observer.disconnect();
   }, []);
 
+  // Pin the section and translate the track sideways as the page scrolls.
+  useLayoutEffect(() => {
+    const section = sectionRef.current;
+    const track = trackRef.current;
+    if (!section || !track) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const context = gsap.context(() => {
+      const distance = () => Math.max(0, track.scrollWidth - window.innerWidth);
+
+      gsap.to(track, {
+        x: () => -distance(),
+        ease: "none",
+        scrollTrigger: {
+          trigger: section,
+          start: "top top",
+          end: () => `+=${distance()}`,
+          pin: true,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+    }, section);
+
+    const refresh = () => {
+      if (!cancelled) ScrollTrigger.refresh();
+    };
+
+    // Web fonts and the portal reveal change the measured width. Re-measure
+    // once the layout has settled so the pin ends exactly with the track.
+    const frame = window.requestAnimationFrame(refresh);
+    void document.fonts?.ready.then(refresh).catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      context.revert();
+    };
+  }, []);
+
   return (
     <section
       id="pricing"
       aria-labelledby="pricing-heading"
-      className="pricing-section"
+      className="price"
+      ref={sectionRef}
     >
-      {/* Lens distortion background — z-index 0 */}
-      <div className="pricing-lens-wrapper" aria-hidden="true">
-        <LensDistortion
-          insideSrc={PORTRAIT_RED}
-          outsideSrc={PORTRAIT_BW}
-          squareSize={0.4}
-        />
-      </div>
-
-      <div className="pricing-shell">
-        <div className="pricing-gutter">
-          <div className="pricing-eyebrow-row">
-            <span className="pricing-eyebrow-rule" aria-hidden="true" />
-            <span className="pricing-eyebrow">Pricing</span>
-          </div>
+      <div className="price__track" ref={trackRef}>
+        <div className="price__panel price__heading">
+          <RepeatedTextHeading />
         </div>
 
-        <RepeatedTextHeading />
-
-        <div className="pricing-gutter">
-          <div className="pricing-intro-row">
-            <p className="pricing-subtitle">
-              Four starting points, priced in INR. Pick the closest fit and we
-              agree the final scope in writing before any work begins.
-            </p>
-            <span className="pricing-count">04 packages</span>
-          </div>
-
-          <div className="pricing-cards" ref={cardsRef}>
-            {PACKAGES.map((pkg, index) => (
+        <div className="price__cards" ref={cardsRef}>
+          {PACKAGES.map((pkg, index) => (
+            <div className="price__card" key={pkg.id}>
               <PricingCard
-                key={pkg.id}
                 index={index}
                 name={pkg.name}
                 price={pkg.price}
@@ -147,19 +172,8 @@ export default function PricingSection() {
                 features={pkg.features}
                 ctaHref="#contact"
               />
-            ))}
-          </div>
-
-          <div className="pricing-footnote">
-            <p>
-              Every figure is a one-time project estimate. The final quote is
-              confirmed after a short scope conversation.
-            </p>
-            <a href="#contact" className="pricing-footnote__link">
-              Not sure which fits? Let&apos;s talk
-              <ArrowUpRight aria-hidden="true" size={15} />
-            </a>
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

@@ -7,7 +7,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { ProgressiveBlurEdges } from "./components/ProgressiveBlurEdges";
 import { HeroSection } from "./components/sections/HeroSection";
 import { CapabilitiesSection } from "./components/sections/CapabilitiesSection";
-import { TimelineAnimation } from "./components/TimelineAnimation";
+import WorkGallery from "./components/workgallery/WorkGallery";
 import PricingSection from "./components/PricingSection";
 import ContactSection from "./components/ContactSection";
 import { MotionFooter } from "./components/MotionFooter";
@@ -46,7 +46,7 @@ export default function App() {
         </PortalStage>
 
         <PortalStage name="process">
-          <TimelineAnimation />
+          <WorkGallery />
         </PortalStage>
 
         <PortalStage name="capabilities">

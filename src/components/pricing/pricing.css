@@ -1,576 +1,240 @@
 /* --------------------------------------------------------------------------
-   PRICING — four repeated-text rows + four floating 3D package cards
-   Palette: #0A0A0A page, #FFFFFF type, #111111 card, #2A2A2A hairline,
-   #660104 accent.
+   PRICING — pinned horizontal track over rose background with new card design.
    -------------------------------------------------------------------------- */
 
-.pricing-section {
-  --pricing-bg: #0a0a0a;
-  --pricing-surface: #111111;
-  --pricing-line: #2a2a2a;
-  --pricing-accent: #660104;
-  --pricing-accent-hover: #7d0205;
+.price {
+  --pricing-bg: #e7e4ef;
+  --text: #000000;
   position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
   isolation: isolate;
-  overflow-x: clip;
-  padding-block: clamp(88px, 9vw, 140px) clamp(72px, 8vw, 112px);
-  background:
-    radial-gradient(
-      ellipse at 50% 0%,
-      rgba(102, 1, 4, 0.3),
-      transparent 42%
-    ),
-    var(--pricing-bg);
-  color: #ffffff;
+  color: #000000;
+  background: #e7e4ef url("/images/projects/imeags/rose.jpg") center / cover no-repeat;
 }
 
-/* Lens distortion background sits behind everything */
-.pricing-lens-wrapper {
+/* Rose background on pinned section */
+.price::before {
+  content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
-  overflow: hidden;
   pointer-events: none;
+  background: linear-gradient(180deg, rgba(231, 228, 239, 0.72) 0%, rgba(231, 228, 239, 0.88) 100%);
 }
 
-.pricing-shell {
+.price__track {
   position: relative;
-  z-index: 2;
-}
-
-.pricing-gutter {
-  width: 100%;
-  max-width: 1280px;
-  margin-inline: auto;
-  padding-inline: 20px;
-}
-
-@media (min-width: 768px) {
-  .pricing-gutter {
-    padding-inline: 32px;
-  }
-}
-
-/* ---------- eyebrow ---------- */
-
-.pricing-eyebrow-row {
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.pricing-eyebrow-rule {
-  width: 28px;
-  height: 2px;
-  flex: none;
-  background: var(--pricing-accent);
-}
-
-.pricing-eyebrow {
-  font-family: "Space Grotesk", monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* ---------- repeated-text rows ---------- */
-
-.pricing-heading {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  margin-block: clamp(18px, 2.5vw, 30px) clamp(32px, 4vw, 54px);
-}
-
-.pricing-row {
-  width: 100%;
-  overflow-x: clip;
-}
-
-.pricing-row__track {
-  display: flex;
   width: max-content;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-}
-
-.pricing-row__half {
-  display: flex;
-  flex: none;
-}
-
-.pricing-row__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2em;
-  padding-right: 0.2em;
-  font-family: var(--font-montserrat), "Montserrat", sans-serif;
-  font-size: clamp(50px, 9.4vw, 172px);
-  font-weight: 800;
-  line-height: 0.9;
-  letter-spacing: -0.035em;
-  text-transform: uppercase;
-  color: #ffffff;
-  text-shadow: 0.035em 0.035em 0 var(--pricing-accent);
-  white-space: nowrap;
-  user-select: none;
-}
-
-/* Alternate rows read as outlines so the four rows have rhythm. */
-.pricing-row:nth-of-type(even) .pricing-row__item {
-  color: transparent;
-  text-shadow: none;
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.34);
-}
-
-.pricing-row__dot {
-  display: block;
-  width: 0.12em;
-  height: 0.12em;
-  flex: none;
-  border-radius: 50%;
-  background: var(--pricing-accent);
-  transform: translateY(0.02em);
-}
-
-.pricing-row:nth-of-type(even) .pricing-row__dot {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.34);
-}
-
-@media (max-width: 767px) {
-  .pricing-row__item {
-    font-size: clamp(42px, 12.2vw, 82px);
-    letter-spacing: -0.025em;
-  }
-
-  .pricing-row:nth-of-type(even) .pricing-row__item {
-    -webkit-text-stroke-width: 0.8px;
-  }
-}
-
-/* ---------- intro copy ---------- */
-
-.pricing-intro-row {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-bottom: clamp(34px, 4vw, 50px);
-  padding-top: 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-@media (min-width: 900px) {
-  .pricing-intro-row {
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 48px;
-  }
-}
-
-.pricing-subtitle {
-  max-width: 44rem;
-  margin: 0;
-  font-family: var(--font-body), "Barlow", sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.68);
-}
-
-@media (min-width: 768px) {
-  .pricing-subtitle {
-    font-size: 18px;
-  }
-}
-
-.pricing-count {
-  flex: none;
-  padding-bottom: 4px;
-  font-family: "Space Grotesk", monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
-}
-
-/* ---------- cards ---------- */
-
-.pricing-cards {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
-  perspective: 1500px;
-  transform-style: preserve-3d;
-}
-
-@media (min-width: 768px) {
-  .pricing-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
-  }
-}
-
-@media (min-width: 1180px) {
-  .pricing-cards {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-  }
-}
-
-.pricing-card {
-  --card-z: 0px;
-  --card-ry: 0deg;
-  --card-delay: 0s;
-  position: relative;
   height: 100%;
-  transform: translate3d(0, 0, var(--card-z)) rotateY(var(--card-ry));
-  transform-style: preserve-3d;
-}
-
-@media (min-width: 768px) {
-  .pricing-card:nth-child(1) {
-    --card-z: -46px;
-    --card-ry: 5deg;
-    --card-delay: 0s;
-  }
-
-  .pricing-card:nth-child(2) {
-    --card-z: 24px;
-    --card-ry: 1.5deg;
-    --card-delay: -2s;
-  }
-
-  .pricing-card:nth-child(3) {
-    --card-z: 42px;
-    --card-ry: -1.5deg;
-    --card-delay: -4s;
-  }
-
-  .pricing-card:nth-child(4) {
-    --card-z: -30px;
-    --card-ry: -5deg;
-    --card-delay: -6s;
-  }
-}
-
-.pricing-card__float {
-  height: 100%;
-  animation: pricing-bob 8s ease-in-out infinite;
-  animation-delay: var(--card-delay);
-  animation-play-state: paused;
-}
-
-.pricing-cards.is-live .pricing-card__float {
-  animation-play-state: running;
   will-change: transform;
 }
 
-.pricing-card:hover .pricing-card__float,
-.pricing-card:focus-within .pricing-card__float {
-  animation-play-state: paused;
+/* ---------- heading ---------- */
+
+.price__heading {
+  flex: 0 0 100vw;
+  display: grid;
+  place-items: center;
+  padding-inline: 5vw;
 }
 
-@keyframes pricing-bob {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
+.price__title {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-weight: 900;
+  font-size: 26vw;
+  line-height: 0.745;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0;
+  display: grid;
+  cursor: default;
+  user-select: none;
 }
 
-.pricing-card__tilt {
-  height: 100%;
-  transform-style: preserve-3d;
+.text-rep span {
+  grid-area: 1 / 1 / 2 / 2;
+  line-height: 0.745;
+  background: transparent;
+  color: var(--text);
+  will-change: transform;
 }
 
-.pricing-card__body {
-  position: relative;
+.text-rep span:not(:last-child) {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--text);
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---------- cards row ---------- */
+
+.price__cards {
+  display: flex;
+  align-items: center;
+  gap: clamp(18px, 4vw, 48px);
+  padding-right: 12vw;
+}
+
+.price__card {
+  flex: 0 0 auto;
+  width: min(90vw, 420px);
+}
+
+/* ---------- new card design ---------- */
+
+.pricing-card-new {
   display: flex;
   flex-direction: column;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 32px;
   height: 100%;
-  min-height: 100%;
-  padding: 26px 24px 24px;
-  overflow: hidden;
-  border: 1px solid var(--pricing-line);
-  border-radius: 12px;
-  background: linear-gradient(180deg, #151515 0%, #0f0f0f 100%);
-  box-shadow:
-    0 24px 50px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  transition:
-    border-color 0.35s ease,
-    box-shadow 0.35s ease,
-    background-color 0.35s ease;
+  min-height: 520px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
 }
 
-.pricing-card__body::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    circle at 82% 0%,
-    rgba(102, 1, 4, 0.18),
-    transparent 46%
-  );
-  opacity: 0;
-  transition: opacity 0.4s ease;
+.pricing-card-new__header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.pricing-card:hover .pricing-card__body,
-.pricing-card:focus-within .pricing-card__body {
-  border-color: #3a3a3a;
-  box-shadow:
-    0 30px 60px rgba(0, 0, 0, 0.62),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+.pricing-card-new__name {
+  margin: 0;
+  font-family: var(--font-archivo), var(--font-inter-tight), "Archivo", "Inter Tight", sans-serif;
+  font-weight: 900;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #000000;
 }
 
-.pricing-card:hover .pricing-card__body::after,
-.pricing-card:focus-within .pricing-card__body::after {
-  opacity: 1;
+.pricing-card-new__price {
+  font-family: var(--font-archivo), var(--font-inter-tight), "Archivo", "Inter Tight", sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.8rem, 3.6vw, 3.2rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: #000000;
 }
 
-.pricing-card__body > * {
-  position: relative;
-  z-index: 1;
+.pricing-card-new__features {
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
 }
 
-.pricing-card__accent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  width: 100%;
-  height: 4px;
-  background: var(--pricing-accent);
-  transform: scaleX(0.28);
-  transform-origin: left center;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.pricing-card:hover .pricing-card__accent,
-.pricing-card:focus-within .pricing-card__accent {
-  transform: scaleX(1);
-}
-
-.pricing-card__topline {
+.pricing-card-new__feature-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 22px;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #000000;
 }
 
-.pricing-card__index,
-.pricing-card__one-time {
-  font-family: "Space Grotesk", monospace;
-  font-size: 9px;
+.pricing-card-new__feature-row:last-child {
+  border-bottom: 1px solid #000000;
+}
+
+.pricing-card-new__feature-label {
   font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.pricing-card__index {
-  color: var(--pricing-accent-hover);
-}
-
-.pricing-card__one-time {
-  color: rgba(255, 255, 255, 0.38);
-}
-
-.pricing-card__name {
-  margin: 0;
-  font-family: var(--font-montserrat), "Montserrat", sans-serif;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
-  text-transform: uppercase;
-  color: #ffffff;
-}
-
-.pricing-card__blurb {
-  margin: 10px 0 0;
-  font-family: var(--font-body), "Barlow", sans-serif;
-  font-size: 13px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.pricing-card__price-block {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.pricing-card__price {
-  display: block;
-  font-family: var(--font-montserrat), "Montserrat", sans-serif;
-  font-size: clamp(24px, 2vw, 30px);
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-  white-space: nowrap;
-  color: #ffffff;
-  font-variant-numeric: tabular-nums;
-}
-
-.pricing-card__note {
-  display: block;
-  margin-top: 8px;
-  font-family: var(--font-body), "Barlow", sans-serif;
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.55);
+  color: #000000;
 }
 
-.pricing-card__features {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 9px;
-  margin: 22px 0 0;
-  padding: 0;
-  list-style: none;
+.pricing-card-new__feature-plus {
+  font-weight: 700;
+  font-size: 16px;
+  color: #000000;
 }
 
-.pricing-card__feature {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-family: var(--font-body), "Barlow", sans-serif;
-  font-size: 14px;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.8);
+.pricing-card-new__cta-wrap {
+  margin-top: auto;
+  padding-top: 28px;
 }
 
-.pricing-card__feature::before {
-  content: "";
-  flex: none;
-  width: 9px;
-  height: 2px;
-  margin-top: 0.6em;
-  background: var(--pricing-accent-hover);
-}
-
-.pricing-card__button {
+.pricing-card-new__button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 26px;
-  padding: 13px 16px;
-  border: 1px solid #ffffff;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #0a0a0a;
-  font-family: "Space Grotesk", monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease,
-    color 0.3s ease;
-}
-
-.pricing-card__button svg {
-  transition: transform 0.3s ease;
-}
-
-.pricing-card__button:hover {
-  border-color: var(--pricing-accent);
-  background: var(--pricing-accent);
+  gap: 10px;
+  height: 44px;
+  padding: 0 20px;
+  background: #000000;
   color: #ffffff;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  border-radius: 0;
+  transition: gap 0.2s ease;
 }
 
-.pricing-card__button:hover svg {
-  transform: translate(2px, -2px);
-}
-
-.pricing-card__button:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 3px;
-}
-
-/* ---------- footnote ---------- */
-
-.pricing-footnote {
-  display: flex;
-  flex-direction: column;
+.pricing-card-new__button:hover {
   gap: 14px;
-  margin-top: clamp(32px, 4vw, 48px);
-  padding-top: 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  font-family: var(--font-body), "Barlow", sans-serif;
-  font-size: 13px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.5);
 }
 
-@media (min-width: 768px) {
-  .pricing-footnote {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 32px;
+@media (max-width: 768px) {
+  .pricing-card-new {
+    padding: 24px;
+    min-height: 480px;
+  }
+
+  .pricing-card-new__feature-label {
+    font-size: 14px;
   }
 }
 
-.pricing-footnote p {
-  max-width: 38rem;
-  margin: 0;
-}
-
-.pricing-footnote__link {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  flex: none;
-  color: #ffffff;
-  font-family: "Space Grotesk", monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-decoration: none;
-  transition: color 0.25s ease;
-}
-
-.pricing-footnote__link svg {
-  transition: transform 0.25s ease;
-}
-
-.pricing-footnote__link:hover {
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.pricing-footnote__link:hover svg {
-  transform: translate(2px, -2px);
-}
-
-.pricing-footnote__link:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 4px;
-}
-
-/* ---------- reduced motion ---------- */
+/* ---------- reduced motion: no pin, no repetition ---------- */
 
 @media (prefers-reduced-motion: reduce) {
+  .price {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+
+  .price__track {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .price__heading {
+    min-height: 70svh;
+  }
+
+  .price__cards {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px;
+    padding: 0 5vw 10vh;
+    perspective: none;
+  }
+
+  .price__card {
+    width: min(86vw, 420px);
+  }
+
+  .pricing-card,
+  .pricing-card__float,
+  .pricing-card__tilt {
+    transform: none !important;
+  }
+
   .pricing-card__float {
     animation: none;
   }
@@ -579,9 +243,7 @@
   .pricing-card__body::after,
   .pricing-card__accent,
   .pricing-card__button,
-  .pricing-card__button svg,
-  .pricing-footnote__link,
-  .pricing-footnote__link svg {
+  .pricing-card__button svg {
     transition-duration: 0.01ms;
   }
 }
