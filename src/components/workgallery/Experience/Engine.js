@@ -93,7 +93,12 @@ export class Engine {
     this.gallery.dispose();
     this.trailController.dispose();
     this.background.dispose();
-    this.renderer.dispose();
-    this.renderer.forceContextLoss();
+    if (this.renderer) {
+      this.renderer.dispose();
+      try {
+        this.renderer.forceContextLoss();
+      } catch (e) {}
+      this.renderer = null;
+    }
   }
 }
