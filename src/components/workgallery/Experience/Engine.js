@@ -97,5 +97,3 @@ export class Engine {
     this.renderer.forceContextLoss();
   }
 }
-
-export { Engine };
