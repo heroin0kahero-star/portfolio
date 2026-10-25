@@ -80,6 +80,9 @@ export default function WorkGallery({ className = '' }: { className?: string }) 
   const [activeIndex, setActiveIndex] = useState(0);
   const [stageData, setStageData] = useState<any[]>(stages.map((s) => ({ ...s, mood: '#1f1f1f', cmyk: { c: 0, m: 0, y: 0, k: 100 }, rgb: { r: 31, g: 31, b: 31 } })));
   const engineRef = useRef<Engine | null>(null);
+  // Moods arrive asynchronously. Keeping them in a ref lets the Engine effect
+  // stay mounted across mood updates instead of being torn down and rebuilt.
+  const stageDataRef = useRef(stageData);
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -92,12 +95,21 @@ export default function WorkGallery({ className = '' }: { className?: string }) 
     const loadMoods = async () => {
       const updated = await Promise.all(
         stages.map(async (stage) => {
-          const mood = await sampleImageMood(stage.image);
-          const rgb = hexToRgb(mood);
-          const cmyk = rgbToCmyk(rgb.r, rgb.g, rgb.b);
-          return { ...stage, mood, rgb, cmyk };
+          try {
+            const mood = await sampleImageMood(stage.image);
+            const rgb = hexToRgb(mood);
+            const cmyk = rgbToCmyk(rgb.r, rgb.g, rgb.b);
+            return { ...stage, mood, rgb, cmyk };
+          } catch (error) {
+            console.warn(
+              `[WorkGallery] Could not sample mood for "${stage.image}"; using neutral fallback.`,
+              error
+            );
+            return { ...stage, mood: '#1f1f1f', rgb: { r: 31, g: 31, b: 31 }, cmyk: { c: 0, m: 0, y: 0, k: 100 } };
+          }
         })
       );
+      stageDataRef.current = updated;
       setStageData(updated);
       if (engineRef.current?.gallery) {
         updated.forEach((s, i) => {
@@ -118,8 +130,15 @@ export default function WorkGallery({ className = '' }: { className?: string }) 
     const canvas = canvasRef.current;
     if (!section || !canvas) return;
 
-    const engine = new Engine(canvas);
+    let engine: Engine;
+    try {
+      engine = new Engine(canvas);
+    } catch (error) {
+      console.error('[WorkGallery] Failed to create the WebGL engine:', error);
+      return;
+    }
     engineRef.current = engine;
+    let cancelled = false;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -134,15 +153,22 @@ export default function WorkGallery({ className = '' }: { className?: string }) 
       { rootMargin: '100px 0px 100px 0px' }
     );
 
-    engine.init().then(() => {
-      // Set moods
-      stageData.forEach((s, i) => {
-        if (engine.gallery?.planes[i]) {
-          engine.gallery.planes[i].userData.mood = s.mood;
-        }
+    engine
+      .init()
+      .then(() => {
+        if (cancelled) return;
+        // Moods are read from the ref so late-arriving colours do not rebuild
+        // the engine; samples that finish afterwards update the planes directly.
+        stageDataRef.current.forEach((s, i) => {
+          if (engine.gallery?.planes[i]) {
+            engine.gallery.planes[i].userData.mood = s.mood;
+          }
+        });
+        observer.observe(section);
+      })
+      .catch((error) => {
+        console.error('[WorkGallery] WebGL engine failed to initialise:', error);
       });
-      observer.observe(section);
-    });
 
     const interval = setInterval(() => {
       if (engine.gallery && engine.camera) {
@@ -154,12 +180,21 @@ export default function WorkGallery({ className = '' }: { className?: string }) 
     }, 100);
 
     return () => {
+      cancelled = true;
       clearInterval(interval);
       observer.disconnect();
       engine.dispose();
-      engineRef.current = null;
+      if (engineRef.current === engine) engineRef.current = null;
+      // Release the GL context only when the canvas has actually left the page.
+      // During StrictMode's simulated unmount the canvas is still connected and
+      // gets reused by the next effect run, so the context must stay alive.
+      requestAnimationFrame(() => {
+        if (!canvas.isConnected) {
+          engine.dispose({ forceContextLoss: true });
+        }
+      });
     };
-  }, [isStatic, stageData]);
+  }, [isStatic]);
 
   if (isStatic) {
     return <StaticFallback stageData={stageData} />;

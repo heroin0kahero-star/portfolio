@@ -18,14 +18,14 @@ export const stages = [
     title: 'Build',
     text: 'Fast, responsive development with clean, maintainable code.',
     tags: ['Responsive', 'Performance', 'Clean code'],
-    image: '/images/projects/imeags/tree...png',
+    image: '/images/projects/imeags/tree-stage.png',
   },
   {
     id: '04',
     title: 'Launch and support',
     text: 'Go live, then I help you keep the site updated and performing.',
     tags: ['Go live', 'Handover', 'Support'],
-    image: '/images/projects/imeags/big tree.png',
+    image: '/images/projects/imeags/big-tree.png',
   },
   {
     id: '05',

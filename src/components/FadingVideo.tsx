@@ -6,7 +6,16 @@
 import React, { useRef, useEffect } from "react";
 import { FadingVideoProps } from "../types";
 
-export function FadingVideo({ src, className = "", style = {} }: FadingVideoProps) {
+interface FadingVideoPropsExtended extends FadingVideoProps {
+  poster?: string;
+}
+
+export function FadingVideo({
+  src,
+  className = "",
+  style = {},
+  poster,
+}: FadingVideoPropsExtended) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const FADE_MS = 500;
@@ -101,6 +110,18 @@ export function FadingVideo({ src, className = "", style = {} }: FadingVideoProp
     };
   }, []);
 
+  const handleError = () => {
+    const video = videoRef.current;
+    const mediaError = video?.error;
+    // Keep the element (and the gradient behind it) in place; only report.
+    console.warn(
+      `[FadingVideo] Failed to load video: ${src}`,
+      mediaError
+        ? `code=${mediaError.code} message=${mediaError.message}`
+        : "no MediaError details"
+    );
+  };
+
   return (
     <video
       ref={videoRef}
@@ -117,6 +138,8 @@ export function FadingVideo({ src, className = "", style = {} }: FadingVideoProp
       muted
       playsInline
       preload="auto"
+      poster={poster}
+      onError={handleError}
     />
   );
 }

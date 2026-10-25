@@ -26,11 +26,11 @@ export function HeroSection() {
       <h1 className="sr-only">
         Suman — web developer, ads, and social media for local businesses
       </h1>
-      <div className="relative min-h-[100svh] flex flex-col justify-between overflow-hidden Z-0">
+      <div className="relative min-h-[100svh] flex flex-col justify-between overflow-hidden z-0">
         {/* Cinematic underlay video */}
         <div className="absolute inset-x-0 top-0 h-full overflow-hidden pointer-events-none z-0">
           <FadingVideo
-            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4"
+            src="/videos/hero/hero.mp4"
             className="absolute left-1/2 top-0 -translate-x-1/2 object-cover object-top"
             style={{ width: "120%", height: "120%" }}
           />

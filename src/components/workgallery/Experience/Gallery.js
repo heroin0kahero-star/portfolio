@@ -4,8 +4,10 @@ import { stages } from '../../../data/stages';
 export class Gallery {
   constructor(debug = null) {
     this.debug = debug;
+    this.disposed = false;
     this.planes = [];
     this.texturesBySource = new Map();
+    this.ownedTextures = new Set();
     this.planeGap = 5;
     this.planeCount = stages.length;
     this.onPointerMove = this.handlePointerMove.bind(this);
@@ -28,13 +30,43 @@ export class Gallery {
     const planeGeo = new THREE.PlaneGeometry(1, 1.3333);
     this.planeGeo = planeGeo;
 
+    // The materials need the stage artwork. Load it here (once per Gallery) and
+    // keep it in texturesBySource so callers can pre-seed it via
+    // setPreloadedTextures before init runs.
+    const loader = new THREE.TextureLoader();
+    const textures = await Promise.all(
+      stages.map(async (stage) => {
+        const preloaded = this.texturesBySource.get(stage.image);
+        if (preloaded) return preloaded;
+        try {
+          const texture = await loader.loadAsync(stage.image);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          this.texturesBySource.set(stage.image, texture);
+          this.ownedTextures.add(texture);
+          return texture;
+        } catch (error) {
+          console.warn(
+            `[Gallery] Failed to load stage artwork "${stage.image}":`,
+            error
+          );
+          return null;
+        }
+      })
+    );
+
+    if (this.disposed) {
+      this.ownedTextures.forEach((texture) => texture.dispose());
+      this.ownedTextures.clear();
+      this.texturesBySource.clear();
+      planeGeo.dispose();
+      return;
+    }
+
     stages.forEach((stage, index) => {
-      const texture = this.texturesBySource.get(stage.image) || null;
-      if (texture) {
-        texture.colorSpace = THREE.SRGBColorSpace;
-      }
+      const texture = textures[index];
       const material = new THREE.MeshBasicMaterial({
         map: texture,
+        color: texture ? 0xffffff : 0x1f1f1f,
         transparent: true,
         side: THREE.DoubleSide,
         depthWrite: false,
@@ -198,6 +230,8 @@ export class Gallery {
   }
 
   dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
     window.removeEventListener('pointermove', this.onPointerMove);
     window.removeEventListener('pointerleave', this.onPointerLeave);
     this.planes.forEach((p) => {
@@ -208,5 +242,9 @@ export class Gallery {
         p.material.dispose();
       }
     });
+    this.ownedTextures.forEach((texture) => texture.dispose());
+    this.ownedTextures.clear();
+    this.texturesBySource.clear();
+    this.planes = [];
   }
 }

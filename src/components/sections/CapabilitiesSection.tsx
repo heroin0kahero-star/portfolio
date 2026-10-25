@@ -16,7 +16,7 @@ export function CapabilitiesSection() {
       {/* Full-bleed background video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <FadingVideo
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_094631_d30ab262-45ee-4b7d-99f3-5d5848c8ef13.mp4"
+          src="/videos/hero/capabilities.mp4"
           className="absolute inset-0 w-full h-full object-cover"
         />
       </div>

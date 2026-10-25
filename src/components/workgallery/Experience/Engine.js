@@ -9,6 +9,7 @@ export class Engine {
     this.canvas = canvas;
     this.experience = experience;
     this.isRunning = false;
+    this.disposed = false;
     this.animationFrameRequestId = null;
 
     this.scene = new THREE.Scene();
@@ -37,6 +38,7 @@ export class Engine {
 
   async init() {
     await this.gallery.init(this.scene);
+    if (this.disposed) return;
     this.scroll.init();
     this.trailController.init(this.scene, this.camera);
     this.background.init(this.scene);
@@ -46,7 +48,7 @@ export class Engine {
   }
 
   start() {
-    if (this.isRunning) return;
+    if (this.disposed || this.isRunning) return;
     this.isRunning = true;
     this.update();
   }
@@ -60,7 +62,7 @@ export class Engine {
   }
 
   resize() {
-    if (!this.canvas) return;
+    if (this.disposed || !this.canvas || !this.renderer) return;
     const width = this.canvas.clientWidth || window.innerWidth;
     const height = this.canvas.clientHeight || window.innerHeight;
     this.camera.aspect = width / height;
@@ -72,7 +74,7 @@ export class Engine {
   }
 
   update() {
-    if (!this.isRunning) return;
+    if (!this.isRunning || this.disposed || !this.renderer) return;
     this.animationFrameRequestId = requestAnimationFrame(this.animate);
 
     this.scroll.update();
@@ -86,8 +88,15 @@ export class Engine {
     this.renderer.render(this.scene, this.camera);
   }
 
-  dispose() {
+  dispose({ forceContextLoss = false } = {}) {
     this.stop();
+
+    if (this.disposed) {
+      if (forceContextLoss) this.releaseContext();
+      return;
+    }
+    this.disposed = true;
+
     window.removeEventListener('resize', this.onResize);
     this.scroll.dispose();
     this.gallery.dispose();
@@ -95,10 +104,24 @@ export class Engine {
     this.background.dispose();
     if (this.renderer) {
       this.renderer.dispose();
-      try {
-        this.renderer.forceContextLoss();
-      } catch (e) {}
+    }
+    if (forceContextLoss) {
+      this.releaseContext();
+    }
+  }
+
+  /**
+   * Explicitly drops the WebGL context. Only safe once the canvas has left the
+   * page: a renderer created later on the same canvas would receive a dead
+   * context.
+   */
+  releaseContext() {
+    if (!this.renderer) return;
+    try {
+      this.renderer.forceContextLoss();
       this.renderer = null;
+    } catch (error) {
+      console.error('[Engine] Failed to release the WebGL context:', error);
     }
   }
 }

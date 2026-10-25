@@ -617,9 +617,13 @@ export function TimelineAnimation({ className = "" }: { className?: string }) {
 
           // Put the React-owned cards back where React expects them before the
           // renderer's internal DOM is removed.
-          cssScene.clear();
+          try {
+            cssScene?.clear();
+          } catch {}
           for (const element of cardElements) {
-            cardLayer.appendChild(element);
+            try {
+              cardLayer.appendChild(element);
+            } catch {}
             element.style.opacity = "";
             element.style.pointerEvents = "";
             element.style.display = "";
@@ -628,17 +632,23 @@ export function TimelineAnimation({ className = "" }: { className?: string }) {
             if (!cardElements.includes(child as HTMLElement)) child.remove();
           });
 
-          for (const mesh of strands) {
-            mesh.geometry.dispose();
-            (mesh.material as import("three").Material).dispose();
-          }
-          tipGeometry.dispose();
-          tipMaterial.dispose();
+          try {
+            for (const mesh of strands) {
+              mesh.geometry.dispose();
+              (mesh.material as import("three").Material).dispose();
+            }
+            tipGeometry.dispose();
+            tipMaterial.dispose();
+          } catch {}
 
           cssRenderer = null;
-          renderer?.dispose();
-          renderer?.forceContextLoss();
-          renderer = null;
+          if (renderer) {
+            try {
+              renderer.dispose();
+              renderer.forceContextLoss();
+            } catch {}
+            renderer = null;
+          }
 
           cardLayer.style.visibility = "";
         };

@@ -216,8 +216,8 @@ export function LensDistortion({
     const state = stateRef.current;
     let cancelled = false;
 
-    const W = window.innerWidth;
-    const H = window.innerHeight;
+    const W = Math.max(1, window.innerWidth);
+    const H = Math.max(1, window.innerHeight);
 
     // Camera
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -228,15 +228,23 @@ export function LensDistortion({
     state.scene = scene;
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha: false,
-      antialias: false,
-      powerPreference: "high-performance",
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(W, H);
-    state.renderer = renderer;
+    let renderer: THREE.WebGLRenderer | null = null;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: false,
+        antialias: false,
+        powerPreference: "high-performance",
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(W, H);
+      try {
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+      } catch {}
+      state.renderer = renderer;
+    } catch (e) {
+      return;
+    }
 
     // Textures
     // TextureLoader resolves its image asynchronously, so texture.image is null
@@ -303,15 +311,20 @@ export function LensDistortion({
 
     // Pointer handler
     const onPointerMove = (e: PointerEvent) => {
+      if (!W || !H) return;
       state.mouse.set((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1);
     };
     window.addEventListener("pointermove", onPointerMove, { passive: true });
 
     // Resize handler
     const onResize = () => {
+      if (!renderer || !uniforms.u_meshSize) return;
       const newW = window.innerWidth;
       const newH = window.innerHeight;
-      renderer.setSize(newW, newH);
+      if (!renderer) return;
+      try {
+        renderer.setSize(newW, newH);
+      } catch {}
       uniforms.u_meshSize.value.set(newW, newH);
     };
     window.addEventListener("resize", onResize);
@@ -319,24 +332,31 @@ export function LensDistortion({
     // Render loop
     const tick = () => {
       if (cancelled || !state.running) return;
+      if (!renderer || !scene || !camera) return;
 
       const time = performance.now() * 0.001;
 
       // On mobile (no pointer), drive along a slow path
-      const isTouch = window.matchMedia("(pointer: coarse)").matches;
-      if (isTouch) {
-        state.mouse.set(
-          0.35 * Math.sin(time * 0.3),
-          0.25 * Math.cos(time * 0.4),
-        );
-      }
+      try {
+        const isTouch = window.matchMedia("(pointer: coarse)").matches;
+        if (isTouch) {
+          state.mouse.set(
+            0.35 * Math.sin(time * 0.3),
+            0.25 * Math.cos(time * 0.4),
+          );
+        }
+      } catch {}
 
       // Ease mouse
       state.mouseEase.lerp(state.mouse, pointerEase);
       uniforms.u_mouse.value.copy(state.mouseEase);
       uniforms.u_time.value = time;
 
-      renderer.render(scene, camera);
+      try {
+        renderer.render(scene, camera);
+      } catch {
+        return;
+      }
       if (!cancelled && state.running) {
         state.animId = requestAnimationFrame(tick);
       }
