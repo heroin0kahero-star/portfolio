@@ -77,9 +77,8 @@ html, body {
   background-color: #000000;
   --about-ink: #111111;
   --about-muted: rgba(17, 17, 17, 0.62);
-  /* Explicit paint order: the portrait is always behind the card layer. */
+  /* Explicit paint order: the shader canvas is always behind the card layer. */
   --about-z-stage: 0;
-  --about-z-portrait: 1;
   --about-z-cards: 30;
   isolation: isolate;
 }
@@ -108,69 +107,42 @@ html, body {
   mix-blend-mode: soft-light;
 }
 
-.about-portrait {
+/* R3F canvas: a background layer. The cards and chrome always sit above it. */
+.about-canvas {
   position: absolute;
   inset: 0;
-  z-index: var(--about-z-portrait);
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.about-portrait__media {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+.about-canvas > div,
+.about-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
   background: transparent;
 }
 
-.about-portrait__layer {
+/* Reduced-motion fallback: three stacked portraits with an opacity swap. */
+.about-portrait-fallback {
   position: absolute;
   inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.about-portrait-fallback__image {
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center;
-  display: block;
-}
-
-.portrait-blinds {
-  position: absolute;
-  inset: 0;
-}
-
-.about-portrait__blinds {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.about-portrait__blind {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  overflow: hidden;
-  transform-origin: center;
-  backface-visibility: hidden;
-}
-
-.about-portrait__blind-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-}
-
-/* Promote the portrait only while a blind transition is actually running. */
-.portrait-blinds--transitioning .about-portrait__layer {
-  will-change: opacity;
-}
-
-.portrait-blinds--transitioning .about-portrait__blind,
-.portrait-blinds--transitioning .about-portrait__blind-image {
-  will-change: transform;
+  opacity: 0;
+  transition: opacity 320ms ease;
 }
 
 .about-edge-blur {
@@ -661,8 +633,8 @@ html.about-has-edge-blur .progressive-blur-edges {
   }
 
   .about-sticky {
-    /* The portrait gets its own 16:9 band between the chrome and the cards.
-       svh keeps the band stable while the mobile address bar moves. */
+    /* Cards are positioned around the shader portrait. svh keeps the layout
+       stable while the mobile address bar moves. */
     --about-portrait-top: 6.4rem;
     --about-portrait-width: min(78vw, 360px);
     --about-portrait-height: min(
@@ -670,34 +642,6 @@ html.about-has-edge-blur .progressive-blur-edges {
       20svh
     );
     --about-portrait-gap: 0.8rem;
-  }
-
-  .about-portrait__media {
-    top: var(--about-portrait-top);
-    left: 50%;
-    width: var(--about-portrait-width);
-    height: var(--about-portrait-height);
-    aspect-ratio: 16 / 9;
-    transform: translateX(-50%);
-    background: transparent;
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000 10%,
-      #000 82%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000 10%,
-      #000 82%,
-      transparent 100%
-    );
-  }
-
-  .about-portrait__layer {
-    object-position: center;
   }
 
   .about-cards {
@@ -834,28 +778,14 @@ html.about-has-edge-blur .progressive-blur-edges {
   .about-stage-glow {
     display: none;
   }
-
-  .about-static__portrait {
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      #000 0%,
-      #000 84%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to bottom,
-      #000 0%,
-      #000 84%,
-      transparent 100%
-    );
-  }
 }
 
 /* Phones (<768px): centre the portrait in the pinned frame and let the two
    cards frame it from the top and bottom. The tablet rules above are left
    untouched, and the desktop layout never sees this block. */
 @media (max-width: 767px) {
-  .about-portrait__media {
+  .about-portrait-fallback {
+    inset: auto;
     top: 50%;
     left: 50%;
     width: 78vw;
@@ -866,25 +796,6 @@ html.about-has-edge-blur .progressive-blur-edges {
     border: 0;
     outline: 0;
     box-shadow: none;
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000 10%,
-      #000 82%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000 10%,
-      #000 82%,
-      transparent 100%
-    );
-  }
-
-  .about-portrait__layer,
-  .about-portrait__blind-image {
-    object-fit: contain;
   }
 
   .about-stage-cards {
@@ -986,17 +897,7 @@ html.about-has-edge-blur .progressive-blur-edges {
   }
 }
 
-@media (max-width: 767px) and (max-height: 660px) {
-  .about-portrait__media {
-    width: 75vw;
-  }
-}
-
 @media (max-width: 767px) and (max-height: 620px) {
-  .about-portrait__media {
-    width: 70vw;
-  }
-
   .about-stage-cards {
     padding-top: 6rem;
     padding-bottom: 5.75rem;
@@ -1032,101 +933,6 @@ html.about-has-edge-blur .progressive-blur-edges {
 
   .about-card {
     transition: none;
-  }
-}
-
-/* Reduced-motion / no-pin layout: every stage is shown as its own block, with
-   no scroll-scrubbed transforms and no blind animation. */
-.about-section--static {
-  height: auto;
-  min-height: 0;
-  background: #000;
-}
-
-.about-static {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-.about-static__stage {
-  position: relative;
-  padding: clamp(5.5rem, 10vw, 8rem) clamp(1.25rem, 6vw, 5rem)
-    clamp(3rem, 6vw, 5rem);
-  color: var(--about-ink);
-}
-
-.about-static__stage[data-tone="light"] {
-  --about-ink: #111111;
-  --about-muted: rgba(17, 17, 17, 0.62);
-}
-
-.about-static__stage[data-tone="dark"] {
-  --about-ink: #ffffff;
-  --about-muted: rgba(255, 255, 255, 0.72);
-}
-
-.about-static__chrome {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto clamp(2rem, 4vw, 3rem);
-}
-
-.about-static__body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(1.5rem, 3vw, 2.5rem);
-  align-items: center;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.about-static__portrait {
-  position: relative;
-  width: 100%;
-  max-width: 640px;
-  aspect-ratio: 16 / 9;
-  margin: 0 auto;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.08);
-}
-
-.about-static__portrait img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.about-static__cards {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-}
-
-.about-static__caption {
-  display: flex;
-  align-items: baseline;
-  gap: 0.9rem;
-  width: 100%;
-  max-width: 1200px;
-  margin: clamp(2rem, 4vw, 3rem) auto 0;
-}
-
-@media (min-width: 900px) {
-  .about-static__body {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  }
-
-  .about-static__portrait {
-    margin: 0;
   }
 }
 

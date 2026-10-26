@@ -3,21 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Scroll-pinned About story: three 16:9 portrait stages, two floating glass
- * cards per stage, and a horizontal-blind transition between portraits.
+ * cards per stage, and a shader-based radial reveal between portraits.
  *
- * The portrait frame keeps a fixed 16:9 aspect ratio at every breakpoint. The
- * blind slices are separate elements, so the portraits themselves are only
- * ever cropped by object-fit: cover and can never stretch.
+ * The portraits live on a background R3F canvas. Scroll progress drives the
+ * shader's 0-1 reveal; the DOM cards always sit above the canvas.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
-  PortraitBlinds,
-  type BlindsState,
-  type PortraitBlindsHandle,
-} from "./PortraitBlinds";
+  AboutPortraitScene,
+  type RevealState,
+} from "./about/AboutPortraitScene";
 import { ScrollFilterHeading } from "./ScrollFilterHeading";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -58,7 +56,6 @@ const PORTRAIT_ALTS = [
 ] as const;
 
 const PORTRAIT_SOURCES = [...PORTRAITS];
-const PORTRAIT_LABELS = [...PORTRAIT_ALTS];
 
 // 800px-wide WebP variants. Phones never need the full 1365–1600px files.
 const PORTRAIT_MOBILE = [
@@ -217,7 +214,7 @@ function washFor(progress: number): [number, number, number] {
   return [0, 0, 1];
 }
 
-function blindsFor(progress: number): BlindsState {
+function revealFor(progress: number): RevealState {
   for (const transition of TRANSITIONS) {
     if (progress >= transition.start && progress <= transition.end) {
       return {
@@ -283,96 +280,14 @@ function EdgeBlur({ edge }: { edge: "top" | "bottom" }) {
   );
 }
 
-function StaticAboutSection() {
-  return (
-    <section
-      id="about"
-      className="about-section about-section--static relative"
-      aria-label="About me"
-    >
-      <div className="about-static">
-        {STAGES.map((stage, stageIndex) => {
-          const onLight = stageIndex === 0;
-          const cardTone = onLight ? "dark" : "light";
-
-          return (
-            <div
-              key={stage.caption}
-              className="about-static__stage"
-              data-tone={onLight ? "light" : "dark"}
-              style={{ backgroundColor: `rgb(${stage.background.join(", ")})` }}
-            >
-              <div className="about-static__chrome">
-                <div className="flex items-center gap-3">
-                  <span className="about-mark" aria-hidden="true" />
-                  <span className="about-label">About me</span>
-                </div>
-                <span className="about-label about-label--right">
-                  {String(stageIndex + 1).padStart(2, "0")} / 03
-                </span>
-              </div>
-
-              <div className="about-static__body">
-                <div className="about-static__portrait">
-                  <img
-                    src={stage.portrait}
-                    srcSet={PORTRAIT_SRCSETS[stageIndex]}
-                    sizes={PORTRAIT_SIZES}
-                    alt={stage.alt}
-                    loading={stageIndex === 0 ? "eager" : "lazy"}
-                    decoding="async"
-                  />
-                </div>
-
-                <div className="about-static__cards">
-                  {stage.cards.map((card) => (
-                    <div
-                      key={card.title}
-                      className={`about-card about-card--${cardTone}`}
-                    >
-                      <span className="about-card__stage" aria-hidden="true">
-                        {String(stageIndex + 1).padStart(2, "0")} / 03
-                      </span>
-                      <h3 className="about-card__title">{card.title}</h3>
-                      <span className="about-card__underline" aria-hidden="true" />
-                      {card.body ? (
-                        <p className="about-card__body">{card.body}</p>
-                      ) : null}
-                      {card.list ? (
-                        <ul className="about-card__list">
-                          {card.list.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="about-static__caption">
-                <span className="about-caption__index">
-                  {String(stageIndex + 1).padStart(2, "0")}
-                </span>
-                <span className="about-caption__label">{stage.caption}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 export default function AboutSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
-  const blindsRef = useRef<PortraitBlindsHandle | null>(null);
   const cardsLayerRef = useRef<HTMLDivElement | null>(null);
+  const revealRef = useRef<RevealState>({ from: 0, to: 0, progress: 0 });
   const washRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const washStateRef = useRef<number[]>([1, 0, 0]);
   const fadeTimerRef = useRef<number | null>(null);
-  const preloadedRef = useRef(-1);
   const inkRef = useRef("");
   const isDesktopRef = useRef(
     typeof window !== "undefined" &&
@@ -385,6 +300,7 @@ export default function AboutSection() {
   const initialisedRef = useRef(false);
   const motionModeRef = useRef<"motion" | "static" | null>(null);
   const [activeStage, setActiveStage] = useState(0);
+  const [sceneActive, setSceneActive] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -465,7 +381,7 @@ export default function AboutSection() {
 
       const background = backgroundFor(p);
       const wash = washFor(p);
-      const blinds = blindsFor(p);
+      revealRef.current = revealFor(p);
       const sticky = stickyRef.current;
       if (sticky) {
         const luminance =
@@ -544,20 +460,6 @@ export default function AboutSection() {
       }
       initialisedRef.current = true;
 
-      blindsRef.current?.render(blinds);
-
-      // Decode the next portrait well before its blind transition begins.
-      const preloadIndex =
-        p < TRANSITIONS[1].start - 0.1
-          ? p < TRANSITIONS[0].start - 0.1
-            ? 1
-            : 2
-          : -1;
-      if (preloadIndex >= 0 && preloadIndex !== preloadedRef.current) {
-        preloadedRef.current = preloadIndex;
-        blindsRef.current?.preload(preloadIndex);
-      }
-
       // On phones the stage groups are plain flex stacks; CSS owns their
       // visibility, so skip six per-frame inline style writes.
       if (!isDesktop) return;
@@ -613,11 +515,6 @@ export default function AboutSection() {
   );
 
   useEffect(() => {
-    if (reducedMotion) {
-      document.documentElement.classList.remove("about-has-edge-blur");
-      return;
-    }
-
     const section = sectionRef.current;
     if (!section) return;
 
@@ -646,6 +543,7 @@ export default function AboutSection() {
       },
       onRefresh: (self) => applyProgress(self.progress),
       onToggle: (self) => {
+        setSceneActive(self.isActive);
         document.documentElement.classList.toggle(
           "about-has-edge-blur",
           self.isActive,
@@ -655,6 +553,7 @@ export default function AboutSection() {
 
     smooth.progress(trigger.progress);
     applyProgress(trigger.progress);
+    setSceneActive(trigger.isActive);
 
     const refresh = () => ScrollTrigger.refresh();
     if (document.readyState === "complete") {
@@ -693,10 +592,6 @@ export default function AboutSection() {
     [],
   );
 
-  if (reducedMotion) {
-    return <StaticAboutSection />;
-  }
-
   return (
     <section
       id="about"
@@ -725,19 +620,32 @@ export default function AboutSection() {
         {/* Stage background wash */}
         <div className="about-stage-glow pointer-events-none absolute inset-0" />
 
-        {/* 16:9 portrait with blind transition */}
-        <div className="about-portrait pointer-events-none">
-          <div className="about-portrait__media">
-            <PortraitBlinds
-              ref={blindsRef}
-              sources={PORTRAIT_SOURCES}
-              srcSets={PORTRAIT_SRCSETS}
-              sizes={PORTRAIT_SIZES}
-              alts={PORTRAIT_LABELS}
-              activeIndex={activeStage}
-            />
+        {/* Background portrait canvas (shader reveal) */}
+        {reducedMotion ? (
+          <div className="about-portrait-fallback" aria-hidden="true">
+            {PORTRAITS.map((source, index) => (
+              <img
+                key={source}
+                className="about-portrait-fallback__image"
+                src={source}
+                srcSet={PORTRAIT_SRCSETS[index]}
+                sizes={PORTRAIT_SIZES}
+                alt=""
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
+                draggable={false}
+                style={{ opacity: activeStage === index ? 1 : 0 }}
+              />
+            ))}
           </div>
-        </div>
+        ) : (
+          <AboutPortraitScene
+            sources={PORTRAIT_SOURCES}
+            mobileSources={PORTRAIT_MOBILE}
+            revealRef={revealRef}
+            active={sceneActive}
+          />
+        )}
 
         {/* Four progressive blur layers at the top and bottom edges */}
         <EdgeBlur edge="top" />
