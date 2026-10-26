@@ -65,7 +65,7 @@ html, body {
    -------------------------------------------------------------------------- */
 
 .about-section {
-  height: 400vh;
+  height: 400svh;
   min-height: 2400px;
   background: #000;
   --about-ink: #111111;
@@ -74,16 +74,34 @@ html, body {
 
 .about-sticky {
   height: 100svh;
-  background-color: #ffffff;
+  background-color: #000000;
   --about-ink: #111111;
   --about-muted: rgba(17, 17, 17, 0.62);
-  --about-edge-rgb: 255 255 255;
-  --about-next-rgb: 255 255 255;
+  /* Explicit paint order: the portrait is always behind the card layer. */
+  --about-z-stage: 0;
+  --about-z-portrait: 1;
+  --about-z-cards: 30;
   isolation: isolate;
 }
 
+/* Opaque stage washes crossfade with opacity only, so no full-screen
+   background-color is recalculated on every scroll frame. */
+.about-stage-wash {
+  position: absolute;
+  inset: 0;
+  z-index: var(--about-z-stage);
+  background: #000000;
+  pointer-events: none;
+}
+
+.about-stage-wash__layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
 .about-stage-glow {
-  z-index: 0;
+  z-index: var(--about-z-stage);
   background:
     radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.14), transparent 46%),
     linear-gradient(180deg, rgba(0, 0, 0, 0.1), transparent 24%, transparent 76%, rgba(0, 0, 0, 0.16));
@@ -93,7 +111,7 @@ html, body {
 .about-portrait {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: var(--about-z-portrait);
 }
 
 .about-portrait__media {
@@ -102,23 +120,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: rgb(var(--about-next-rgb));
-}
-
-.about-portrait__layer {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 20%;
-  display: block;
-  will-change: opacity;
-}
-
-.portrait-blinds {
-  position: absolute;
-  inset: 0;
+  background: transparent;
 }
 
 .about-portrait__layer {
@@ -129,7 +131,11 @@ html, body {
   object-fit: cover;
   object-position: center;
   display: block;
-  will-change: opacity;
+}
+
+.portrait-blinds {
+  position: absolute;
+  inset: 0;
 }
 
 .about-portrait__blinds {
@@ -142,12 +148,9 @@ html, body {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 10%;
   overflow: hidden;
-  will-change: clip-path;
+  transform-origin: center;
   backface-visibility: hidden;
-  /* Start fully closed — JS sets the opening clip-path per frame */
-  clip-path: inset(50% 0 50% 0);
 }
 
 .about-portrait__blind-image {
@@ -155,10 +158,18 @@ html, body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 1000%;
   object-fit: cover;
-  object-position: center 20%;
+  object-position: center;
   display: block;
+}
+
+/* Promote the portrait only while a blind transition is actually running. */
+.portrait-blinds--transitioning .about-portrait__layer {
+  will-change: opacity;
+}
+
+.portrait-blinds--transitioning .about-portrait__blind,
+.portrait-blinds--transitioning .about-portrait__blind-image {
   will-change: transform;
 }
 
@@ -440,6 +451,7 @@ html.about-has-edge-blur .progressive-blur-edges {
 }
 
 .about-cards {
+  z-index: var(--about-z-cards);
   perspective: 1200px;
   transform-style: preserve-3d;
 }
@@ -467,7 +479,6 @@ html.about-has-edge-blur .progressive-blur-edges {
 
 .about-card-shell {
   transform-style: preserve-3d;
-  will-change: transform, opacity;
   pointer-events: none;
 }
 
@@ -481,7 +492,17 @@ html.about-has-edge-blur .progressive-blur-edges {
   animation: about-bob var(--bob-duration, 6s) ease-in-out infinite;
   animation-delay: var(--bob-delay, 0s);
   transform-style: preserve-3d;
-  will-change: transform;
+}
+
+/* Promote desktop cards only while the pinned section is on screen. */
+@media (min-width: 1024px) {
+  html.about-has-edge-blur .about-card-shell {
+    will-change: transform, opacity;
+  }
+
+  html.about-has-edge-blur .about-card-float {
+    will-change: transform;
+  }
 }
 
 .about-card-tilt {
@@ -635,19 +656,44 @@ html.about-has-edge-blur .progressive-blur-edges {
 
 @media (max-width: 1023px) {
   .about-section {
-    height: 400vh;
+    height: 400svh;
     min-height: 2400px;
   }
 
+  .about-sticky {
+    /* The portrait gets its own 16:9 band between the chrome and the cards.
+       svh keeps the band stable while the mobile address bar moves. */
+    --about-portrait-top: 6.4rem;
+    --about-portrait-width: min(78vw, 360px);
+    --about-portrait-height: min(
+      calc(var(--about-portrait-width) * 0.5625),
+      20svh
+    );
+    --about-portrait-gap: 0.8rem;
+  }
+
   .about-portrait__media {
-    /* On mobile, keep a framed 4:5 box instead of full-viewport */
-    position: absolute;
-    top: 50%;
+    top: var(--about-portrait-top);
     left: 50%;
-    width: min(76vw, 420px);
-    height: auto;
-    aspect-ratio: 4 / 5;
-    transform: translate(-50%, -50%);
+    width: var(--about-portrait-width);
+    height: var(--about-portrait-height);
+    aspect-ratio: 16 / 9;
+    transform: translateX(-50%);
+    background: transparent;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 10%,
+      #000 82%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 10%,
+      #000 82%,
+      transparent 100%
+    );
   }
 
   .about-portrait__layer {
@@ -664,16 +710,30 @@ html.about-has-edge-blur .progressive-blur-edges {
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 6.5rem 1rem 7.5rem;
+    padding: calc(
+        var(--about-portrait-top) + var(--about-portrait-height) +
+          var(--about-portrait-gap)
+      )
+      1rem 7.5rem;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 320ms ease, visibility 320ms ease;
+    transition:
+      opacity 320ms ease,
+      visibility 0s linear 320ms;
     transform-style: flat;
   }
 
   .about-stage-cards[data-visible="true"] {
     opacity: 1;
     visibility: visible;
+    transition:
+      opacity 320ms ease,
+      visibility 0s linear 0s;
+  }
+
+  /* Only promote the stage groups while their opacity fade is running. */
+  .about-cards.is-fading .about-stage-cards {
+    will-change: opacity;
   }
 
   .about-card-anchor {
@@ -697,6 +757,7 @@ html.about-has-edge-blur .progressive-blur-edges {
 
   .about-card-float {
     animation: none;
+    will-change: auto;
   }
 
   .about-card-tilt {
@@ -707,8 +768,24 @@ html.about-has-edge-blur .progressive-blur-edges {
   .about-card {
     padding: 1rem 1.05rem 1.1rem;
     border-radius: 16px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(17, 17, 17, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: none;
+  }
+
+  .about-card--dark {
+    color: #111111;
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(17, 17, 17, 0.2);
+  }
+
+  .about-card--light {
+    color: #ffffff;
+    background: rgba(17, 17, 17, 0.82);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .about-card__stage {
@@ -748,6 +825,75 @@ html.about-has-edge-blur .progressive-blur-edges {
 
   .about-progress {
     width: 72px;
+  }
+
+  /* These are the most expensive mobile paint/composite effects and they add
+     nothing once the portrait is a framed band. */
+  .about-edge-blur,
+  .about-grain,
+  .about-stage-glow {
+    display: none;
+  }
+
+  .about-static__portrait {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 0%,
+      #000 84%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000 0%,
+      #000 84%,
+      transparent 100%
+    );
+  }
+}
+
+/* Short phones (including Android Chrome with the address bar visible). Keep
+   both cards fully inside the sticky frame instead of clipping the last body
+   line, without changing the normal-height phone layout. */
+@media (max-width: 1023px) and (max-height: 700px) {
+  .about-sticky {
+    --about-portrait-top: 5.6rem;
+    --about-portrait-height: min(
+      calc(var(--about-portrait-width) * 0.5625),
+      18svh
+    );
+  }
+
+  .about-stage-cards {
+    gap: 0.5rem;
+  }
+
+  .about-card {
+    padding: 0.82rem 0.95rem 0.9rem;
+  }
+
+  .about-card__stage {
+    margin-bottom: 0.35rem;
+  }
+
+  .about-card__underline {
+    margin-top: 0.35rem;
+  }
+
+  .about-card__title {
+    font-size: 1.14rem;
+  }
+
+  .about-card__body {
+    margin-top: 0.4rem;
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .about-card__list {
+    gap: 0.22rem;
+    margin-top: 0.45rem;
+    font-size: 0.7rem;
+    line-height: 1.3;
   }
 }
 

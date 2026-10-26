@@ -21,6 +21,12 @@ import {
 import { ScrollFilterHeading } from "./ScrollFilterHeading";
 
 gsap.registerPlugin(ScrollTrigger);
+// Mobile browsers resize the viewport when the address bar shows/hides. The
+// About section is sized in svh, so ignoring that resize avoids a scroll jump
+// and a full ScrollTrigger re-measure mid-scroll.
+ScrollTrigger.config({ ignoreMobileResize: true });
+
+const DESKTOP_QUERY = "(min-width: 1024px)";
 
 type Side = "left" | "right";
 
@@ -53,6 +59,20 @@ const PORTRAIT_ALTS = [
 
 const PORTRAIT_SOURCES = [...PORTRAITS];
 const PORTRAIT_LABELS = [...PORTRAIT_ALTS];
+
+// 800px-wide WebP variants. Phones never need the full 1365–1600px files.
+const PORTRAIT_MOBILE = [
+  "/images/projects/imeags/portrait-1-bw-800.webp",
+  "/images/projects/imeags/portrait-2-red-800.webp",
+  "/images/projects/imeags/portrait-3-3d-800.webp",
+] as const;
+
+const PORTRAIT_WIDTHS = [1365, 1600, 1365];
+const PORTRAIT_SRCSETS = PORTRAITS.map(
+  (source, index) =>
+    `${PORTRAIT_MOBILE[index]} 800w, ${source} ${PORTRAIT_WIDTHS[index]}w`,
+);
+const PORTRAIT_SIZES = "(min-width: 1024px) 100vw, min(78vw, 360px)";
 
 const STAGES: AboutStage[] = [
   {
@@ -177,6 +197,26 @@ function backgroundFor(progress: number): [number, number, number] {
   return STAGES[2].background;
 }
 
+// Three opaque washes crossfaded with opacity only. This replaces the old
+// per-frame full-screen background-color write, which forced a repaint of the
+// whole sticky frame on every scroll tick.
+function washFor(progress: number): [number, number, number] {
+  const first = TRANSITIONS[0];
+  const second = TRANSITIONS[1];
+
+  if (progress < first.start) return [1, 0, 0];
+  if (progress <= first.end) {
+    const t = clamp01((progress - first.start) / (first.end - first.start));
+    return [1 - t, t, 0];
+  }
+  if (progress < second.start) return [0, 1, 0];
+  if (progress <= second.end) {
+    const t = clamp01((progress - second.start) / (second.end - second.start));
+    return [0, 1 - t, t];
+  }
+  return [0, 0, 1];
+}
+
 function blindsFor(progress: number): BlindsState {
   for (const transition of TRANSITIONS) {
     if (progress >= transition.start && progress <= transition.end) {
@@ -276,6 +316,8 @@ function StaticAboutSection() {
                 <div className="about-static__portrait">
                   <img
                     src={stage.portrait}
+                    srcSet={PORTRAIT_SRCSETS[stageIndex]}
+                    sizes={PORTRAIT_SIZES}
                     alt={stage.alt}
                     loading={stageIndex === 0 ? "eager" : "lazy"}
                     decoding="async"
@@ -326,6 +368,16 @@ export default function AboutSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
   const blindsRef = useRef<PortraitBlindsHandle | null>(null);
+  const cardsLayerRef = useRef<HTMLDivElement | null>(null);
+  const washRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const washStateRef = useRef<number[]>([1, 0, 0]);
+  const fadeTimerRef = useRef<number | null>(null);
+  const preloadedRef = useRef(-1);
+  const inkRef = useRef("");
+  const isDesktopRef = useRef(
+    typeof window !== "undefined" &&
+      window.matchMedia(DESKTOP_QUERY).matches,
+  );
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const motionRefs = useRef<Array<HTMLDivElement | null>>([]);
   const progressRef = useRef(0);
@@ -412,34 +464,40 @@ export default function AboutSection() {
       progressRef.current = p;
 
       const background = backgroundFor(p);
+      const wash = washFor(p);
       const blinds = blindsFor(p);
       const sticky = stickyRef.current;
       if (sticky) {
-        sticky.style.backgroundColor = `rgb(${background.join(", ")})`;
-        sticky.style.setProperty("--about-edge-rgb", background.join(" "));
-        // The portrait frame sits on the incoming stage colour while the
-        // outgoing slices collapse, so any seam reads as the next stage.
-        sticky.style.setProperty(
-          "--about-next-rgb",
-          STAGES[blinds.to].background.join(" "),
-        );
         const luminance =
           (0.2126 * background[0] +
             0.7152 * background[1] +
             0.0722 * background[2]) /
           255;
-        const useDarkInk = luminance > 0.6;
-        sticky.style.setProperty(
-          "--about-ink",
-          useDarkInk ? "#111111" : "#ffffff",
-        );
-        sticky.style.setProperty(
-          "--about-muted",
-          useDarkInk ? "rgba(17, 17, 17, 0.62)" : "rgba(255, 255, 255, 0.72)",
-        );
+        const ink = luminance > 0.6 ? "light" : "dark";
+        if (inkRef.current !== ink) {
+          inkRef.current = ink;
+          const useDarkInk = ink === "light";
+          sticky.style.setProperty(
+            "--about-ink",
+            useDarkInk ? "#111111" : "#ffffff",
+          );
+          sticky.style.setProperty(
+            "--about-muted",
+            useDarkInk ? "rgba(17, 17, 17, 0.62)" : "rgba(255, 255, 255, 0.72)",
+          );
+        }
       }
 
-      const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+      // Crossfade the opaque stage washes. Hold states write nothing.
+      washRefs.current.forEach((layer, index) => {
+        if (!layer) return;
+        const value = wash[index];
+        if (washStateRef.current[index] === value) return;
+        washStateRef.current[index] = value;
+        layer.style.opacity = value.toFixed(4);
+      });
+
+      const isDesktop = isDesktopRef.current;
       const motionMode = isDesktop && !reducedMotion ? "motion" : "static";
 
       // Leaving motion mode (resize below 1024px or reduced motion turned on)
@@ -452,6 +510,12 @@ export default function AboutSection() {
           element.style.removeProperty("opacity");
           element.style.removeProperty("transform");
         });
+        cardRefs.current.forEach((element) => {
+          if (!element) return;
+          element.style.removeProperty("opacity");
+          element.style.removeProperty("transform");
+          element.style.removeProperty("pointer-events");
+        });
       }
 
       const nextStage =
@@ -463,23 +527,46 @@ export default function AboutSection() {
         activeStageRef.current = nextStage;
         setActiveStage(nextStage);
         if (wasInitialised && motionMode === "motion") flipStage = nextStage;
+
+        // Promote the mobile stage groups only for the duration of their
+        // opacity crossfade, then hand the layer back to the browser.
+        const cardsLayer = cardsLayerRef.current;
+        if (cardsLayer) {
+          cardsLayer.classList.add("is-fading");
+          if (fadeTimerRef.current !== null) {
+            window.clearTimeout(fadeTimerRef.current);
+          }
+          fadeTimerRef.current = window.setTimeout(() => {
+            cardsLayerRef.current?.classList.remove("is-fading");
+            fadeTimerRef.current = null;
+          }, 420);
+        }
       }
       initialisedRef.current = true;
 
       blindsRef.current?.render(blinds);
+
+      // Decode the next portrait well before its blind transition begins.
+      const preloadIndex =
+        p < TRANSITIONS[1].start - 0.1
+          ? p < TRANSITIONS[0].start - 0.1
+            ? 1
+            : 2
+          : -1;
+      if (preloadIndex >= 0 && preloadIndex !== preloadedRef.current) {
+        preloadedRef.current = preloadIndex;
+        blindsRef.current?.preload(preloadIndex);
+      }
+
+      // On phones the stage groups are plain flex stacks; CSS owns their
+      // visibility, so skip six per-frame inline style writes.
+      if (!isDesktop) return;
 
       STAGES.forEach((stage, stageIndex) => {
         stage.cards.forEach((card, sideIndex) => {
           const cardIndex = stageIndex * 2 + sideIndex;
           const shell = cardRefs.current[cardIndex];
           if (!shell) return;
-
-          if (!isDesktop) {
-            shell.style.opacity = "";
-            shell.style.transform = "";
-            shell.style.pointerEvents = "";
-            return;
-          }
 
           if (reducedMotion) {
             const visible = stageIndex === nextStage;
@@ -534,12 +621,24 @@ export default function AboutSection() {
     const section = sectionRef.current;
     if (!section) return;
 
+    // Scrub the tween instead of painting straight from the scroll event: GSAP
+    // eases the progress value, which removes the snap at each wheel/touch tick.
+    const proxy = { progress: 0 };
+    const smooth = gsap.to(proxy, {
+      progress: 1,
+      ease: "none",
+      paused: true,
+      overwrite: true,
+      onUpdate: () => applyProgress(proxy.progress),
+    });
+
     const trigger = ScrollTrigger.create({
       trigger: section,
       start: "top top",
       end: "bottom bottom",
+      animation: smooth,
+      scrub: 0.75,
       onUpdate: (self) => {
-        applyProgress(self.progress);
         document.documentElement.classList.toggle(
           "about-has-edge-blur",
           self.isActive || self.progress > 0,
@@ -554,6 +653,7 @@ export default function AboutSection() {
       },
     });
 
+    smooth.progress(trigger.progress);
     applyProgress(trigger.progress);
 
     const refresh = () => ScrollTrigger.refresh();
@@ -565,14 +665,23 @@ export default function AboutSection() {
 
     return () => {
       window.removeEventListener("load", refresh);
+      if (fadeTimerRef.current !== null) {
+        window.clearTimeout(fadeTimerRef.current);
+        fadeTimerRef.current = null;
+      }
+      cardsLayerRef.current?.classList.remove("is-fading");
+      smooth.kill();
       trigger.kill();
       document.documentElement.classList.remove("about-has-edge-blur");
     };
   }, [applyProgress, reducedMotion]);
 
   useEffect(() => {
-    const query = window.matchMedia("(min-width: 1024px)");
-    const handleChange = () => applyProgress(progressRef.current);
+    const query = window.matchMedia(DESKTOP_QUERY);
+    const handleChange = () => {
+      isDesktopRef.current = query.matches;
+      applyProgress(progressRef.current);
+    };
     query.addEventListener("change", handleChange);
     return () => query.removeEventListener("change", handleChange);
   }, [applyProgress]);
@@ -596,15 +705,34 @@ export default function AboutSection() {
       className="about-section relative bg-black"
     >
       <div ref={stickyRef} className="about-sticky sticky top-0 overflow-hidden">
+        {/* Opaque stage washes (opacity-only crossfade) */}
+        <div className="about-stage-wash" aria-hidden="true">
+          {STAGES.map((stage, stageIndex) => (
+            <span
+              key={stage.caption}
+              ref={(element) => {
+                washRefs.current[stageIndex] = element;
+              }}
+              className="about-stage-wash__layer"
+              style={{
+                backgroundColor: `rgb(${stage.background.join(", ")})`,
+                opacity: stageIndex === 0 ? 1 : 0,
+              }}
+            />
+          ))}
+        </div>
+
         {/* Stage background wash */}
         <div className="about-stage-glow pointer-events-none absolute inset-0" />
 
-        {/* 16:9 portrait with ten-slice blind transition */}
+        {/* 16:9 portrait with blind transition */}
         <div className="about-portrait pointer-events-none">
           <div className="about-portrait__media">
             <PortraitBlinds
               ref={blindsRef}
               sources={PORTRAIT_SOURCES}
+              srcSets={PORTRAIT_SRCSETS}
+              sizes={PORTRAIT_SIZES}
               alts={PORTRAIT_LABELS}
               activeIndex={activeStage}
             />
@@ -633,7 +761,10 @@ export default function AboutSection() {
         </div>
 
         {/* Floating cards */}
-        <div className="about-cards pointer-events-none absolute inset-0 z-30">
+        <div
+          ref={cardsLayerRef}
+          className="about-cards pointer-events-none absolute inset-0 z-30"
+        >
           {STAGES.map((stage, stageIndex) => (
             <div
               key={stage.caption}
