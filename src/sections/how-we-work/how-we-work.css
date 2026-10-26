@@ -1,0 +1,398 @@
+/* --------------------------------------------------------------------------
+   HOW WE WORK TOGETHER — pinned depth flight
+   -------------------------------------------------------------------------- */
+
+.hww__scroll {
+  position: relative;
+  /* 100svh stage + 550svh pinned flight (FLIGHT_VH 450 + HOLD_VH 100). The
+     wrapper owns the scroll distance so the pinned section itself never
+     changes the height of the document, which keeps later pins (Pricing)
+     measuring against a stable layout. */
+  height: 650svh;
+}
+
+/* Reduced motion and no-WebGL both add .hww--static; the wrapper must collapse
+   with the static list instead of leaving a screen of blank scroll. */
+.hww__scroll:has(> .hww--static) {
+  height: auto;
+}
+
+.hww {
+  --hww-paper: #fbfaf6;
+  --hww-ink: #1a1a1a;
+  --hww-graphite: #2a2a2a;
+  --hww-muted: rgba(26, 26, 26, 0.56);
+  position: relative;
+  height: 100svh;
+  min-height: 100svh;
+  overflow: hidden;
+  background: var(--hww-paper);
+  color: var(--hww-ink);
+  isolation: isolate;
+}
+
+.hww__canvas-host {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: var(--hww-paper);
+}
+
+.hww__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hww__intro {
+  position: absolute;
+  z-index: 3;
+  top: clamp(1.4rem, 5.5vh, 3.4rem);
+  left: clamp(1.25rem, 5vw, 4.5rem);
+  max-width: 46rem;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.hww__kicker {
+  margin: 0;
+  font-family: var(--font-space-grotesk, "Space Grotesk", monospace);
+  font-size: clamp(0.58rem, 0.62vw, 0.68rem);
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--hww-muted);
+}
+
+.hww__title {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-heading, "Instrument Serif", Georgia, serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2.8rem, 6.6vw, 6.4rem);
+  line-height: 0.88;
+  letter-spacing: -0.035em;
+  color: var(--hww-ink);
+}
+
+.hww__title em {
+  font-style: inherit;
+}
+
+.hww__lede {
+  max-width: 26rem;
+  margin: clamp(0.9rem, 2vh, 1.5rem) 0 0;
+  font-family: var(--font-body, "Barlow", sans-serif);
+  font-size: clamp(0.8rem, 0.92vw, 0.95rem);
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--hww-muted);
+}
+
+.hww__hud {
+  position: absolute;
+  right: clamp(1.25rem, 5vw, 4.5rem);
+  bottom: clamp(1.15rem, 4.5vh, 2.8rem);
+  left: clamp(1.25rem, 5vw, 4.5rem);
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  pointer-events: none;
+  font-family: var(--font-space-grotesk, "Space Grotesk", monospace);
+  color: var(--hww-ink);
+}
+
+.hww__hud-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+
+.hww__hud-label {
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--hww-muted);
+}
+
+.hww__hud-count {
+  min-width: 1.6ch;
+  font-size: clamp(0.95rem, 1.15vw, 1.15rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.hww__hud-total {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--hww-muted);
+}
+
+.hww__hud-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+}
+
+.hww__hud-caption {
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hww-muted);
+}
+
+.hww__meter {
+  display: flex;
+  gap: 0.28rem;
+}
+
+.hww__seg {
+  position: relative;
+  display: block;
+  width: clamp(1.1rem, 2.4vw, 2.1rem);
+  height: 2px;
+  overflow: hidden;
+  background: rgba(26, 26, 26, 0.16);
+}
+
+.hww__seg i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--hww-ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion / no-WebGL fallback
+   -------------------------------------------------------------------------- */
+
+.hww__static {
+  display: none;
+}
+
+.hww__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hww--static,
+.hww--static .hww__static {
+  display: block;
+}
+
+.hww--static {
+  height: auto;
+  min-height: 100svh;
+  overflow: visible;
+  padding: clamp(2.5rem, 8vh, 5rem) clamp(1.25rem, 5vw, 4.5rem)
+    clamp(4rem, 10vh, 7rem);
+}
+
+.hww--static .hww__canvas-host,
+.hww--static .hww__hud {
+  display: none;
+}
+
+.hww--static .hww__intro {
+  position: static;
+  max-width: 62rem;
+  margin: 0 auto clamp(3rem, 7vh, 5rem);
+  pointer-events: auto;
+}
+
+.hww__static-inner {
+  position: relative;
+  width: min(100%, 1180px);
+  margin: 0 auto;
+}
+
+.hww__line {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--hww-graphite);
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.hww__static-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3rem, 8vw, 6rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hww__static-list li {
+  width: min(100%, 520px);
+}
+
+.hww__static-list li:nth-child(even) {
+  align-self: flex-end;
+}
+
+.hww__static-card {
+  position: relative;
+  padding: clamp(1.5rem, 3.2vw, 2.6rem);
+  border: 1px solid rgba(26, 26, 26, 0.5);
+  background: #ffffff;
+  box-shadow: 0 24px 60px -42px rgba(0, 0, 0, 0.55);
+}
+
+.hww__static-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--font-space-grotesk, "Space Grotesk", monospace);
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--hww-muted);
+}
+
+.hww__static-title {
+  margin: clamp(1.6rem, 3.4vw, 2.6rem) 0 0;
+  font-family: var(--font-heading, "Instrument Serif", Georgia, serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2rem, 3.8vw, 3.2rem);
+  line-height: 0.94;
+  letter-spacing: -0.03em;
+}
+
+.hww__static-text {
+  max-width: 34rem;
+  margin: 0.95rem 0 0;
+  font-family: var(--font-body, "Barlow", sans-serif);
+  font-size: 0.92rem;
+  font-weight: 400;
+  line-height: 1.58;
+  color: rgba(26, 26, 26, 0.72);
+}
+
+.hww__static-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.5rem 0 0;
+  padding: 1.1rem 0 0;
+  border-top: 1px solid rgba(26, 26, 26, 0.18);
+  list-style: none;
+}
+
+.hww__static-tags li {
+  font-family: var(--font-space-grotesk, "Space Grotesk", monospace);
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--hww-muted);
+}
+
+.hww__static-tags li + li::before {
+  content: "/";
+  margin-right: 0.4rem;
+  color: rgba(26, 26, 26, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hww__scroll {
+    height: auto;
+  }
+
+  .hww {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+    padding: clamp(2.5rem, 8vh, 5rem) clamp(1.25rem, 5vw, 4.5rem)
+      clamp(4rem, 10vh, 7rem);
+  }
+
+  .hww__static {
+    display: block;
+  }
+
+  .hww__canvas-host,
+  .hww__hud {
+    display: none;
+  }
+
+  .hww__intro {
+    position: static;
+    max-width: 62rem;
+    margin: 0 auto clamp(3rem, 7vh, 5rem);
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .hww__intro {
+    max-width: 24rem;
+  }
+
+  .hww__title {
+    font-size: clamp(2.5rem, 12vw, 3.5rem);
+  }
+
+  .hww__hud {
+    align-items: center;
+  }
+
+  .hww__hud-caption {
+    display: none;
+  }
+
+  .hww__seg {
+    width: clamp(1rem, 6vw, 1.6rem);
+  }
+
+  .hww__static-list li,
+  .hww__static-list li:nth-child(even) {
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .hww__line {
+    opacity: 0.18;
+  }
+}
+
+/* The incoming capabilities section rises over the frozen final frame during
+   the hold. The class is added by HowWeWork.js and removed on destroy. */
+[data-portal-stage="capabilities"].hww-handoff {
+  position: relative;
+  z-index: 2;
+  margin-top: -100svh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-portal-stage="capabilities"].hww-handoff {
+    margin-top: 0;
+  }
+}

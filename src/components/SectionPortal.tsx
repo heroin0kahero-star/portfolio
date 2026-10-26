@@ -36,7 +36,6 @@ export function PortalStage({
 
 const BOUNDARIES = [
   { from: "about", to: "process" },
-  { from: "process", to: "capabilities" },
   { from: "capabilities", to: "live-builds" },
   { from: "live-builds", to: "pricing" },
   { from: "pricing", to: "footer" },
