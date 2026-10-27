@@ -52,6 +52,12 @@ export class SliceRevealer {
   }
 
   private configure(preset: SlicePreset, color: string) {
+    this.applyPreset(preset, color);
+    this.overlay.dataset.visible = "true";
+    this.overlay.classList.add("is-animating");
+  }
+
+  private applyPreset(preset: SlicePreset, color: string) {
     const vertical = preset.orientation === "vertical";
 
     this.layer.classList.toggle(
@@ -73,9 +79,6 @@ export class SliceRevealer {
       band.style.color = color;
       band.style.backgroundColor = color;
     });
-
-    this.overlay.dataset.visible = "true";
-    this.overlay.classList.add("is-animating");
   }
 
   /** Slide the bands in until the section is fully hidden. */
@@ -108,6 +111,19 @@ export class SliceRevealer {
         onComplete: () => this.settle(),
       });
     });
+  }
+
+  /**
+   * Re-colour and re-configure the bands while they already cover the stage.
+   * Used when the scroll target changes during a cover so the section can jump
+   * straight to the latest stage without uncovering an intermediate one.
+   */
+  restage(preset: SlicePreset, color: string) {
+    if (this.destroyed) return;
+
+    this.applyPreset(preset, color);
+    gsap.killTweensOf(this.bands);
+    gsap.set(this.activeBands, { xPercent: 0, yPercent: 0 });
   }
 
   /** Slide the bands out and uncover the incoming stage. */

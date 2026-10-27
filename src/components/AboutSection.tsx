@@ -2,21 +2,21 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Scroll-pinned About story: three 16:9 portrait stages, two floating glass
- * cards per stage, and a shader-based radial reveal between portraits.
+ * Scroll-pinned About story: three full-stage portrait scenes, two floating
+ * glass cards per scene, and a Codrops-style slice transition between stages.
  *
- * The portraits live on a background R3F canvas. Scroll progress drives the
- * shader's 0-1 reveal; the DOM cards always sit above the canvas.
+ * Each stage is a real DOM layer (portrait + cards). A single stack of colour
+ * bands covers the whole stage while the layers swap, then uncovers the
+ * incoming stage while its portrait settles from a slight zoom.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  AboutPortraitScene,
-  type RevealState,
-} from "./about/AboutPortraitScene";
 import { ScrollFilterHeading } from "./ScrollFilterHeading";
+import { MAX_SLICE_BANDS, SliceRevealer } from "./about/SliceRevealer";
+import { STAGE_BAND_COLORS, transitionFor } from "./about/slicePresets";
+import "./about/about.css";
 
 gsap.registerPlugin(ScrollTrigger);
 // Mobile browsers resize the viewport when the address bar shows/hides. The
@@ -24,9 +24,11 @@ gsap.registerPlugin(ScrollTrigger);
 // and a full ScrollTrigger re-measure mid-scroll.
 ScrollTrigger.config({ ignoreMobileResize: true });
 
-const DESKTOP_QUERY = "(min-width: 1024px)";
+const DESKTOP_QUERY = "(min-width: 768px)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 type Side = "left" | "right";
+type Tone = "light" | "dark";
 
 interface AboutCard {
   side: Side;
@@ -38,7 +40,9 @@ interface AboutCard {
 interface AboutStage {
   portrait: string;
   alt: string;
-  background: [number, number, number];
+  /** Solid stage colour. Matches each portrait's own edge. */
+  color: string;
+  tone: Tone;
   caption: string;
   cards: AboutCard[];
 }
@@ -55,8 +59,6 @@ const PORTRAIT_ALTS = [
   "3D-style portrait of Suman",
 ] as const;
 
-const PORTRAIT_SOURCES = [...PORTRAITS];
-
 // 800px-wide WebP variants. Phones never need the full 1365–1600px files.
 const PORTRAIT_MOBILE = [
   "/images/projects/imeags/portrait-1-bw-800.webp",
@@ -69,13 +71,14 @@ const PORTRAIT_SRCSETS = PORTRAITS.map(
   (source, index) =>
     `${PORTRAIT_MOBILE[index]} 800w, ${source} ${PORTRAIT_WIDTHS[index]}w`,
 );
-const PORTRAIT_SIZES = "(min-width: 1024px) 100vw, min(78vw, 360px)";
+const PORTRAIT_SIZES = "(min-width: 768px) 100vw, 80vw";
 
 const STAGES: AboutStage[] = [
   {
     portrait: PORTRAITS[0],
     alt: PORTRAIT_ALTS[0],
-    background: [255, 255, 255],
+    color: "#ffffff",
+    tone: "light",
     caption: "Who I am",
     cards: [
       {
@@ -95,7 +98,8 @@ const STAGES: AboutStage[] = [
     alt: PORTRAIT_ALTS[1],
     // Sampled from the portrait's edge (the requested #7A0B0E read darker after
     // compression). Matching the edge keeps the photo seam invisible.
-    background: [102, 1, 4],
+    color: "#660104",
+    tone: "dark",
     caption: "What I do",
     cards: [
       {
@@ -113,7 +117,8 @@ const STAGES: AboutStage[] = [
   {
     portrait: PORTRAITS[2],
     alt: PORTRAIT_ALTS[2],
-    background: [0, 0, 0],
+    color: "#111111",
+    tone: "dark",
     caption: "How I can help",
     cards: [
       {
@@ -135,135 +140,28 @@ const STAGES: AboutStage[] = [
   },
 ];
 
-// Each transition scrubs across a quarter of the pinned scroll.
-const TRANSITIONS = [
-  { start: 0.17, end: 0.42, from: 0, to: 1 },
-  { start: 0.58, end: 0.83, from: 1, to: 2 },
-];
-
-// Cards arrive after the portrait transition has finished, hold through the
-// middle of the stage, then leave as the next transition begins.
-const CARD_WINDOWS = [
-  { enterStart: 0.005, enterEnd: 0.075, exitStart: 0.14, exitEnd: 0.17 },
-  { enterStart: 0.42, enterEnd: 0.5, exitStart: 0.55, exitEnd: 0.58 },
-  { enterStart: 0.83, enterEnd: 0.91, exitStart: 1.2, exitEnd: 1.3 },
-];
-
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-const easeOutCubic = (value: number) => 1 - Math.pow(1 - value, 3);
-const easeInCubic = (value: number) => Math.pow(value, 3);
 
 // Each card drifts at its own rate so a stage's two cards never move as one
 // block. Distinct, non-linear values also keep the six cards visually separate.
-const CARD_PARALLAX = [148, -132, 174, -156, 126, -170];
+const CARD_PARALLAX = [92, -104, 112, -96, 86, -116];
 const parallaxFor = (index: number) => CARD_PARALLAX[index % CARD_PARALLAX.length];
 
-function mixColor(
-  from: [number, number, number],
-  to: [number, number, number],
-  amount: number,
-): [number, number, number] {
-  const t = clamp01(amount);
-  return [
-    Math.round(from[0] + (to[0] - from[0]) * t),
-    Math.round(from[1] + (to[1] - from[1]) * t),
-    Math.round(from[2] + (to[2] - from[2]) * t),
-  ];
-}
-
-function backgroundFor(progress: number): [number, number, number] {
-  const first = TRANSITIONS[0];
-  const second = TRANSITIONS[1];
-
-  if (progress < first.start) return STAGES[0].background;
-  if (progress <= first.end) {
-    return mixColor(
-      STAGES[0].background,
-      STAGES[1].background,
-      (progress - first.start) / (first.end - first.start),
-    );
-  }
-  if (progress < second.start) return STAGES[1].background;
-  if (progress <= second.end) {
-    return mixColor(
-      STAGES[1].background,
-      STAGES[2].background,
-      (progress - second.start) / (second.end - second.start),
-    );
-  }
-  return STAGES[2].background;
-}
-
-// Three opaque washes crossfaded with opacity only. This replaces the old
-// per-frame full-screen background-color write, which forced a repaint of the
-// whole sticky frame on every scroll tick.
-function washFor(progress: number): [number, number, number] {
-  const first = TRANSITIONS[0];
-  const second = TRANSITIONS[1];
-
-  if (progress < first.start) return [1, 0, 0];
-  if (progress <= first.end) {
-    const t = clamp01((progress - first.start) / (first.end - first.start));
-    return [1 - t, t, 0];
-  }
-  if (progress < second.start) return [0, 1, 0];
-  if (progress <= second.end) {
-    const t = clamp01((progress - second.start) / (second.end - second.start));
-    return [0, 1 - t, t];
-  }
-  return [0, 0, 1];
-}
-
-function revealFor(progress: number): RevealState {
-  for (const transition of TRANSITIONS) {
-    if (progress >= transition.start && progress <= transition.end) {
-      return {
-        from: transition.from,
-        to: transition.to,
-        progress: clamp01(
-          (progress - transition.start) / (transition.end - transition.start),
-        ),
-      };
-    }
-  }
-
-  if (progress < TRANSITIONS[0].start) {
-    return { from: 0, to: 0, progress: 0 };
-  }
-  if (progress < TRANSITIONS[1].start) {
-    return { from: 1, to: 1, progress: 0 };
-  }
-  return { from: 2, to: 2, progress: 0 };
-}
-
-function cardTransform(
-  side: Side,
-  entryProgress: number,
-  exitProgress: number,
-  canExit: boolean,
-  progress: number,
-  parallax: number,
-) {
-  const entering = easeOutCubic(clamp01(entryProgress));
-  const exiting = easeInCubic(clamp01(exitProgress));
-  const travel = canExit && exitProgress > 0 ? 1 - exiting : entering;
-  const opacity = entering * (1 - exiting);
-
-  const startX = side === "left" ? -13 : 13;
-  const endX = 0;
-  const startRotation = side === "left" ? 24 : -24;
-  const endRotation = side === "left" ? 6 : -6;
-
-  const x = startX + (endX - startX) * travel;
-  const z = -300 + 300 * travel;
-  const rotation = startRotation + (endRotation - startRotation) * travel;
-  // Anchored to the middle of the scroll so cards drift around the stage rather
-  // than accumulating an offset on stages that have no exit window.
-  const y = parallax * (progress - 0.5);
+function cardPose(side: Side, stageProgress: number, index: number) {
+  // Cards slide in from their own edge over the first part of a stage, then
+  // drift slowly for the rest. Timing is scroll-driven, so a fast wheel burst
+  // simply brings them in faster instead of queueing an animation.
+  const entry = clamp01(stageProgress / 0.18);
+  const eased = 1 - Math.pow(1 - entry, 3);
+  const direction = side === "left" ? -1 : 1;
+  const x = direction * 14 * (1 - eased);
+  const z = -160 * (1 - eased);
+  const rotationY = -direction * 16 * (1 - eased);
+  const y = parallaxFor(index) * (stageProgress - 0.5);
 
   return {
-    opacity,
-    transform: `translate3d(${x.toFixed(3)}vw, ${y.toFixed(2)}px, ${z.toFixed(2)}px) rotateY(${rotation.toFixed(3)}deg)`,
+    opacity: eased,
+    transform: `translate3d(${x.toFixed(3)}vw, ${y.toFixed(2)}px, ${z.toFixed(2)}px) rotateY(${rotationY.toFixed(3)}deg)`,
   };
 }
 
@@ -283,89 +181,101 @@ function EdgeBlur({ edge }: { edge: "top" | "bottom" }) {
 export default function AboutSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
-  const cardsLayerRef = useRef<HTMLDivElement | null>(null);
-  const revealRef = useRef<RevealState>({ from: 0, to: 0, progress: 0 });
-  const washRefs = useRef<Array<HTMLSpanElement | null>>([]);
-  const washStateRef = useRef<number[]>([1, 0, 0]);
-  const fadeTimerRef = useRef<number | null>(null);
-  const inkRef = useRef("");
-  const isDesktopRef = useRef(
-    typeof window !== "undefined" &&
-      window.matchMedia(DESKTOP_QUERY).matches,
-  );
-  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const motionRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const progressRef = useRef(0);
+  const stageLayerRef = useRef<HTMLDivElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const bandsLayerRef = useRef<HTMLDivElement | null>(null);
+  const bandRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const portraitRefs = useRef<Array<HTMLImageElement | null>>([]);
+  const cardShellRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const cardMotionRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const revealerRef = useRef<SliceRevealer | null>(null);
+
   const activeStageRef = useRef(0);
-  const initialisedRef = useRef(false);
-  const motionModeRef = useRef<"motion" | "static" | null>(null);
-  const [activeStage, setActiveStage] = useState(0);
-  const [sceneActive, setSceneActive] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  const targetStageRef = useRef(0);
+  const transitioningRef = useRef(false);
+  const progressRef = useRef(0);
+  const isDesktopRef = useRef(
+    typeof window !== "undefined" && window.matchMedia(DESKTOP_QUERY).matches,
+  );
+  const reducedMotionRef = useRef(
+    typeof window !== "undefined" &&
+      window.matchMedia(REDUCED_MOTION_QUERY).matches,
   );
 
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const handleChange = () => setReducedMotion(query.matches);
-    query.addEventListener("change", handleChange);
-    return () => query.removeEventListener("change", handleChange);
+  const [activeStage, setActiveStage] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(reducedMotionRef.current);
+  const [imagesReady, setImagesReady] = useState(false);
+
+  /* ---------------------------------------------------------------------- */
+  /* Card pose / reset                                                       */
+  /* ---------------------------------------------------------------------- */
+
+  const resetCardStage = useCallback((stageIndex: number) => {
+    for (let sideIndex = 0; sideIndex < 2; sideIndex += 1) {
+      const index = stageIndex * 2 + sideIndex;
+      const shell = cardShellRefs.current[index];
+      const motion = cardMotionRefs.current[index];
+
+      if (motion) {
+        gsap.killTweensOf(motion);
+        motion.style.removeProperty("opacity");
+        motion.style.removeProperty("transform");
+      }
+      if (shell) {
+        shell.style.removeProperty("opacity");
+        shell.style.removeProperty("transform");
+        shell.style.removeProperty("pointer-events");
+      }
+    }
   }, []);
 
-  /**
-   * Flip-style stage change, layered on an inner wrapper so it never competes
-   * with the per-frame scroll transforms on the card shell.
-   *
-   * GSAP Flip is installed, but Flip.getState() misreads the bounds of a card
-   * nested inside the shell's perspective + rotateY transform (offsets of
-   * several hundred pixels). This is the manual FLIP path instead: capture the
-   * rest pose in JS, animate in from an offset pose, and animate the outgoing
-   * pair out, all with transforms so the scroll path never reads layout.
-   */
-  const playCardFlip = useCallback((stageIndex: number) => {
-    const incoming = [
-      motionRefs.current[stageIndex * 2],
-      motionRefs.current[stageIndex * 2 + 1],
-    ].filter((element): element is HTMLDivElement => Boolean(element));
-    if (!incoming.length) return;
+  const applyCardProgress = useCallback(
+    (progress: number, stageIndex: number) => {
+      if (!isDesktopRef.current || reducedMotionRef.current) return;
 
-    const outgoing: HTMLDivElement[] = [];
-    motionRefs.current.forEach((element, index) => {
-      if (!element) return;
-      if (Math.floor(index / 2) !== stageIndex) outgoing.push(element);
-    });
+      const start = stageIndex / 3;
+      const stageProgress = clamp01((progress - start) * 3);
 
-    gsap.killTweensOf([...incoming, ...outgoing]);
+      STAGES[stageIndex].cards.forEach((card, sideIndex) => {
+        const index = stageIndex * 2 + sideIndex;
+        const shell = cardShellRefs.current[index];
+        if (!shell) return;
 
-    if (outgoing.length) {
-      gsap.to(outgoing, {
-        opacity: 0,
-        scale: 0.92,
-        y: (index: number) => (index % 2 === 0 ? -12 : 14),
-        duration: 0.34,
-        ease: "power2.in",
-        overwrite: true,
-        onComplete: () => gsap.set(outgoing, { clearProps: "opacity,transform" }),
+        const pose = cardPose(card.side, stageProgress, index);
+        shell.style.opacity = pose.opacity.toFixed(4);
+        shell.style.transform = pose.transform;
+        shell.style.pointerEvents = pose.opacity > 0.35 ? "auto" : "none";
       });
-    }
+    },
+    [],
+  );
 
-    const sign = stageIndex % 2 === 0 ? -1 : 1;
+  /**
+   * A small timed flourish layered on the inner wrapper. It never touches the
+   * scroll-driven shell transform, so the two motions cannot fight.
+   */
+  const playCardFlourish = useCallback((stageIndex: number) => {
+    if (!isDesktopRef.current || reducedMotionRef.current) return;
+
+    const motions = [
+      cardMotionRefs.current[stageIndex * 2],
+      cardMotionRefs.current[stageIndex * 2 + 1],
+    ].filter((element): element is HTMLDivElement => Boolean(element));
+    if (!motions.length) return;
+
+    gsap.killTweensOf(motions);
     gsap.fromTo(
-      incoming,
+      motions,
       {
-        opacity: 0,
-        scale: 0.84,
-        y: (index: number) => (index % 2 === 0 ? -14 : 16),
-        rotationY: sign * 12,
+        scale: 0.94,
+        y: (index: number) => (index % 2 === 0 ? -10 : 12),
+        rotationY: (index: number) => (index % 2 === 0 ? 8 : -8),
       },
       {
-        opacity: 1,
         scale: 1,
         y: 0,
         rotationY: 0,
-        duration: 0.78,
+        duration: 0.72,
         ease: "power3.out",
         stagger: 0.06,
         overwrite: true,
@@ -374,176 +284,225 @@ export default function AboutSection() {
     );
   }, []);
 
+  const swapStage = useCallback(
+    (to: number) => {
+      if (to === activeStageRef.current) return;
+
+      resetCardStage(activeStageRef.current);
+      resetCardStage(to);
+      activeStageRef.current = to;
+      setActiveStage(to);
+      applyCardProgress(progressRef.current, to);
+    },
+    [applyCardProgress, resetCardStage],
+  );
+
+  const zoomPortrait = useCallback((stageIndex: number) => {
+    if (reducedMotionRef.current) return;
+
+    const image = portraitRefs.current[stageIndex];
+    if (!image) return;
+
+    gsap.killTweensOf(image);
+    gsap.fromTo(
+      image,
+      { scale: 1.2 },
+      {
+        scale: 1,
+        duration: 0.9,
+        delay: 0.35,
+        ease: "power3.out",
+        overwrite: true,
+        clearProps: "transform",
+      },
+    );
+  }, []);
+
+  /* ---------------------------------------------------------------------- */
+  /* Stage switching                                                         */
+  /* ---------------------------------------------------------------------- */
+
+  const runTransition = useCallback(async () => {
+    const revealer = revealerRef.current;
+    if (!revealer || transitioningRef.current) return;
+
+    transitioningRef.current = true;
+
+    try {
+      while (targetStageRef.current !== activeStageRef.current) {
+        if (reducedMotionRef.current) break;
+
+        const from = activeStageRef.current;
+        const to = targetStageRef.current;
+        const preset = transitionFor(from, to);
+
+        // Bands are the incoming stage's colour, so the cover already reads as
+        // the next scene rather than as a neutral wipe.
+        await revealer.cover(preset, STAGE_BAND_COLORS[to]);
+
+        if (reducedMotionRef.current) break;
+
+        // The user may have scrolled back while the cover was running. In that
+        // case simply uncover the stage that is still there.
+        if (targetStageRef.current === from) {
+          await revealer.reveal(preset);
+          break;
+        }
+
+        // If the scroll target moved on during the cover, repaint the bands for
+        // the latest stage and reveal that directly instead of flashing the
+        // intermediate stage first.
+        const latest = targetStageRef.current;
+        const finalPreset =
+          latest === to ? preset : transitionFor(from, latest);
+
+        if (latest !== to) {
+          revealer.restage(finalPreset, STAGE_BAND_COLORS[latest]);
+        }
+
+        swapStage(latest);
+        playCardFlourish(latest);
+        zoomPortrait(latest);
+
+        await revealer.reveal(finalPreset);
+      }
+    } finally {
+      transitioningRef.current = false;
+    }
+  }, [playCardFlourish, swapStage, zoomPortrait]);
+
   const applyProgress = useCallback(
     (progress: number) => {
       const p = clamp01(progress);
       progressRef.current = p;
 
-      const background = backgroundFor(p);
-      const wash = washFor(p);
-      revealRef.current = revealFor(p);
-      const sticky = stickyRef.current;
-      if (sticky) {
-        const luminance =
-          (0.2126 * background[0] +
-            0.7152 * background[1] +
-            0.0722 * background[2]) /
-          255;
-        const ink = luminance > 0.6 ? "light" : "dark";
-        if (inkRef.current !== ink) {
-          inkRef.current = ink;
-          const useDarkInk = ink === "light";
-          sticky.style.setProperty(
-            "--about-ink",
-            useDarkInk ? "#111111" : "#ffffff",
-          );
-          sticky.style.setProperty(
-            "--about-muted",
-            useDarkInk ? "rgba(17, 17, 17, 0.62)" : "rgba(255, 255, 255, 0.72)",
-          );
-        }
+      const nextStage = Math.min(2, Math.floor(p * 3));
+      targetStageRef.current = nextStage;
+
+      if (reducedMotionRef.current) {
+        // Reduced motion skips the bands entirely; CSS crossfades the stage
+        // layers over 300ms as the active index changes.
+        swapStage(nextStage);
+      } else if (
+        nextStage !== activeStageRef.current &&
+        !transitioningRef.current
+      ) {
+        void runTransition();
       }
 
-      // Crossfade the opaque stage washes. Hold states write nothing.
-      washRefs.current.forEach((layer, index) => {
-        if (!layer) return;
-        const value = wash[index];
-        if (washStateRef.current[index] === value) return;
-        washStateRef.current[index] = value;
-        layer.style.opacity = value.toFixed(4);
-      });
-
-      const isDesktop = isDesktopRef.current;
-      const motionMode = isDesktop && !reducedMotion ? "motion" : "static";
-
-      // Leaving motion mode (resize below 1024px or reduced motion turned on)
-      // must not leave a half-finished flip transform on a wrapper.
-      if (motionModeRef.current !== motionMode) {
-        motionModeRef.current = motionMode;
-        gsap.killTweensOf(motionRefs.current.filter(Boolean));
-        motionRefs.current.forEach((element) => {
-          if (!element) return;
-          element.style.removeProperty("opacity");
-          element.style.removeProperty("transform");
-        });
-        cardRefs.current.forEach((element) => {
-          if (!element) return;
-          element.style.removeProperty("opacity");
-          element.style.removeProperty("transform");
-          element.style.removeProperty("pointer-events");
-        });
-      }
-
-      const nextStage =
-        p < TRANSITIONS[0].end ? 0 : p < TRANSITIONS[1].end ? 1 : 2;
-      let flipStage: number | null = null;
-
-      if (activeStageRef.current !== nextStage) {
-        const wasInitialised = initialisedRef.current;
-        activeStageRef.current = nextStage;
-        setActiveStage(nextStage);
-        if (wasInitialised && motionMode === "motion") flipStage = nextStage;
-
-        // Promote the mobile stage groups only for the duration of their
-        // opacity crossfade, then hand the layer back to the browser.
-        const cardsLayer = cardsLayerRef.current;
-        if (cardsLayer) {
-          cardsLayer.classList.add("is-fading");
-          if (fadeTimerRef.current !== null) {
-            window.clearTimeout(fadeTimerRef.current);
-          }
-          fadeTimerRef.current = window.setTimeout(() => {
-            cardsLayerRef.current?.classList.remove("is-fading");
-            fadeTimerRef.current = null;
-          }, 420);
-        }
-      }
-      initialisedRef.current = true;
-
-      // On phones the stage groups are plain flex stacks; CSS owns their
-      // visibility, so skip six per-frame inline style writes.
-      if (!isDesktop) return;
-
-      STAGES.forEach((stage, stageIndex) => {
-        stage.cards.forEach((card, sideIndex) => {
-          const cardIndex = stageIndex * 2 + sideIndex;
-          const shell = cardRefs.current[cardIndex];
-          if (!shell) return;
-
-          if (reducedMotion) {
-            const visible = stageIndex === nextStage;
-            shell.style.opacity = visible ? "1" : "0";
-            shell.style.transform = "none";
-            shell.style.pointerEvents = visible ? "auto" : "none";
-            return;
-          }
-
-          const timing = CARD_WINDOWS[stageIndex];
-          const left = card.side === "left";
-          const enterStart = timing.enterStart + (left ? 0 : 0.016);
-          const enterEnd = timing.enterEnd + (left ? 0 : 0.008);
-          const exitStart = timing.exitStart + (left ? 0 : 0.012);
-          const exitEnd = timing.exitEnd + (left ? 0 : 0.008);
-
-          const entryProgress = clamp01(
-            (p - enterStart) / Math.max(0.001, enterEnd - enterStart),
-          );
-          const exitProgress = clamp01(
-            (p - exitStart) / Math.max(0.001, exitEnd - exitStart),
-          );
-
-          const { opacity, transform } = cardTransform(
-            card.side,
-            entryProgress,
-            exitProgress,
-            timing.exitStart < 1,
-            p,
-            parallaxFor(cardIndex),
-          );
-
-          shell.style.opacity = opacity.toFixed(4);
-          shell.style.transform = transform;
-          shell.style.pointerEvents = opacity > 0.35 ? "auto" : "none";
-        });
-      });
-
-      // The entrance runs after the shells settle into their new frame so the
-      // incoming cards animate in from the pose they are actually entering from.
-      if (flipStage !== null) playCardFlip(flipStage);
+      // Card motion is scrubbed by the same scroll position as the stage
+      // selection. Mobile and reduced-motion layouts are handled by CSS.
+      applyCardProgress(p, activeStageRef.current);
     },
-    [playCardFlip, reducedMotion],
+    [applyCardProgress, runTransition, swapStage],
   );
+
+  /* ---------------------------------------------------------------------- */
+  /* Reduced-motion switch                                                   */
+  /* ---------------------------------------------------------------------- */
+
+  useEffect(() => {
+    const query = window.matchMedia(REDUCED_MOTION_QUERY);
+    const handleChange = () => setReducedMotion(query.matches);
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    reducedMotionRef.current = reducedMotion;
+
+    if (!reducedMotion) return;
+
+    targetStageRef.current = activeStageRef.current;
+    // A pending transition may still be awaiting a band tween. Its loop checks
+    // the reduced-motion ref after every await and exits on its own.
+    transitioningRef.current = false;
+    revealerRef.current?.cancel();
+
+    // The scroll-driven card poses are inline styles. Clear them so the plain
+    // reduced-motion layout is not left with a half-entered card.
+    cardMotionRefs.current.forEach((motion) => {
+      if (!motion) return;
+      gsap.killTweensOf(motion);
+      motion.style.removeProperty("opacity");
+      motion.style.removeProperty("transform");
+    });
+    cardShellRefs.current.forEach((shell) => {
+      if (!shell) return;
+      shell.style.removeProperty("opacity");
+      shell.style.removeProperty("transform");
+      shell.style.removeProperty("pointer-events");
+    });
+  }, [reducedMotion]);
+
+  /* ---------------------------------------------------------------------- */
+  /* Decode portraits before the pinned scroll is measured                   */
+  /* ---------------------------------------------------------------------- */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const decodePortraits = async () => {
+      const images = portraitRefs.current.filter(
+        (image): image is HTMLImageElement => Boolean(image),
+      );
+
+      await Promise.all(
+        images.map((image) =>
+          image.decode ? image.decode().catch(() => undefined) : Promise.resolve(),
+        ),
+      );
+
+      if (typeof document !== "undefined" && document.fonts) {
+        await document.fonts.ready.catch(() => undefined);
+      }
+
+      if (!cancelled) setImagesReady(true);
+    };
+
+    void decodePortraits();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /* ---------------------------------------------------------------------- */
+  /* Slice overlay engine                                                    */
+  /* ---------------------------------------------------------------------- */
+
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    const layer = bandsLayerRef.current;
+    const bands = bandRefs.current.filter(
+      (band): band is HTMLSpanElement => Boolean(band),
+    );
+
+    if (!overlay || !layer || !bands.length) return;
+
+    revealerRef.current = new SliceRevealer(overlay, layer, bands);
+
+    return () => {
+      revealerRef.current?.destroy();
+      revealerRef.current = null;
+    };
+  }, []);
+
+  /* ---------------------------------------------------------------------- */
+  /* ScrollTrigger                                                           */
+  /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section) return;
-
-    // Scrub the tween instead of painting straight from the scroll event: GSAP
-    // eases the progress value, which removes the snap at each wheel/touch tick.
-    const proxy = { progress: 0 };
-    const smooth = gsap.to(proxy, {
-      progress: 1,
-      ease: "none",
-      paused: true,
-      overwrite: true,
-      onUpdate: () => applyProgress(proxy.progress),
-    });
+    if (!section || !imagesReady) return;
 
     const trigger = ScrollTrigger.create({
       trigger: section,
       start: "top top",
       end: "bottom bottom",
-      animation: smooth,
-      scrub: 0.75,
-      onUpdate: (self) => {
-        document.documentElement.classList.toggle(
-          "about-has-edge-blur",
-          self.isActive || self.progress > 0,
-        );
-      },
+      onUpdate: (self) => applyProgress(self.progress),
       onRefresh: (self) => applyProgress(self.progress),
       onToggle: (self) => {
-        setSceneActive(self.isActive);
         document.documentElement.classList.toggle(
           "about-has-edge-blur",
           self.isActive,
@@ -551,9 +510,11 @@ export default function AboutSection() {
       },
     });
 
-    smooth.progress(trigger.progress);
     applyProgress(trigger.progress);
-    setSceneActive(trigger.isActive);
+    document.documentElement.classList.toggle(
+      "about-has-edge-blur",
+      trigger.isActive,
+    );
 
     const refresh = () => ScrollTrigger.refresh();
     if (document.readyState === "complete") {
@@ -564,33 +525,51 @@ export default function AboutSection() {
 
     return () => {
       window.removeEventListener("load", refresh);
-      if (fadeTimerRef.current !== null) {
-        window.clearTimeout(fadeTimerRef.current);
-        fadeTimerRef.current = null;
-      }
-      cardsLayerRef.current?.classList.remove("is-fading");
-      smooth.kill();
       trigger.kill();
       document.documentElement.classList.remove("about-has-edge-blur");
     };
-  }, [applyProgress, reducedMotion]);
+  }, [applyProgress, imagesReady]);
+
+  /* ---------------------------------------------------------------------- */
+  /* Desktop / resize changes                                                */
+  /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
     const query = window.matchMedia(DESKTOP_QUERY);
     const handleChange = () => {
       isDesktopRef.current = query.matches;
-      applyProgress(progressRef.current);
+
+      cardShellRefs.current.forEach((shell) => {
+        if (!shell) return;
+        shell.style.removeProperty("opacity");
+        shell.style.removeProperty("transform");
+        shell.style.removeProperty("pointer-events");
+      });
+      cardMotionRefs.current.forEach((motion) => {
+        if (!motion) return;
+        gsap.killTweensOf(motion);
+        motion.style.removeProperty("opacity");
+        motion.style.removeProperty("transform");
+      });
+
+      applyCardProgress(progressRef.current, activeStageRef.current);
     };
+
     query.addEventListener("change", handleChange);
     return () => query.removeEventListener("change", handleChange);
-  }, [applyProgress]);
+  }, [applyCardProgress]);
 
   useEffect(
     () => () => {
-      gsap.killTweensOf(motionRefs.current.filter(Boolean));
+      gsap.killTweensOf(cardMotionRefs.current.filter(Boolean));
+      portraitRefs.current.forEach((image) => {
+        if (image) gsap.killTweensOf(image);
+      });
     },
     [],
   );
+
+  const tone: Tone = STAGES[activeStage].tone;
 
   return (
     <section
@@ -599,53 +578,140 @@ export default function AboutSection() {
       data-stage={activeStage}
       className="about-section relative bg-black"
     >
-      <div ref={stickyRef} className="about-sticky sticky top-0 overflow-hidden">
-        {/* Opaque stage washes (opacity-only crossfade) */}
-        <div className="about-stage-wash" aria-hidden="true">
+      <div
+        ref={stickyRef}
+        data-tone={tone}
+        className="about-sticky sticky top-0 overflow-hidden"
+      >
+        {/* One real layer per stage. Only the active layer is visible at rest. */}
+        <div
+          ref={stageLayerRef}
+          className={`about-stages${reducedMotion ? " about-stages--fade" : ""}`}
+        >
           {STAGES.map((stage, stageIndex) => (
-            <span
+            <div
               key={stage.caption}
-              ref={(element) => {
-                washRefs.current[stageIndex] = element;
-              }}
-              className="about-stage-wash__layer"
-              style={{
-                backgroundColor: `rgb(${stage.background.join(", ")})`,
-                opacity: stageIndex === 0 ? 1 : 0,
-              }}
-            />
+              className="about-stage"
+              data-visible={activeStage === stageIndex}
+              aria-hidden={activeStage !== stageIndex}
+              data-tone={stage.tone}
+              style={{ backgroundColor: stage.color }}
+            >
+              <div className="about-stage__portrait">
+                <img
+                  ref={(element) => {
+                    portraitRefs.current[stageIndex] = element;
+                  }}
+                  className="about-portrait-image"
+                  src={stage.portrait}
+                  srcSet={PORTRAIT_SRCSETS[stageIndex]}
+                  sizes={PORTRAIT_SIZES}
+                  alt={stage.alt}
+                  loading="eager"
+                  decoding="async"
+                  draggable={false}
+                />
+              </div>
+
+              <div className="about-stage__cards">
+                {stage.cards.map((card, sideIndex) => {
+                  const cardIndex = stageIndex * 2 + sideIndex;
+
+                  return (
+                    <div
+                      key={card.title}
+                      className={`about-card-anchor about-card-anchor--${card.side}`}
+                    >
+                      <div
+                        ref={(element) => {
+                          cardShellRefs.current[cardIndex] = element;
+                        }}
+                        className="about-card-shell"
+                        style={{
+                          opacity: 0,
+                          transform:
+                            card.side === "left"
+                              ? "translate3d(-14vw, 0, -160px) rotateY(16deg)"
+                              : "translate3d(14vw, 0, -160px) rotateY(-16deg)",
+                        }}
+                      >
+                        <div
+                          ref={(element) => {
+                            cardMotionRefs.current[cardIndex] = element;
+                          }}
+                          className="about-card-motion"
+                        >
+                          <div
+                            className="about-card-float"
+                            style={
+                              {
+                                "--bob-duration": `${5.4 + cardIndex * 0.31}s`,
+                                "--bob-delay": `${-0.7 - cardIndex * 0.73}s`,
+                              } as CSSProperties
+                            }
+                          >
+                            <div
+                              className={`about-card about-card--${stage.tone === "light" ? "dark" : "light"} about-card-tilt`}
+                              onPointerMove={(event) => {
+                                if (event.pointerType !== "mouse") return;
+                                const rect =
+                                  event.currentTarget.getBoundingClientRect();
+                                const x =
+                                  (event.clientX - rect.left) / rect.width - 0.5;
+                                const y =
+                                  (event.clientY - rect.top) / rect.height - 0.5;
+                                event.currentTarget.style.setProperty(
+                                  "--tilt-y",
+                                  `${(x * 6).toFixed(2)}deg`,
+                                );
+                                event.currentTarget.style.setProperty(
+                                  "--tilt-x",
+                                  `${(-y * 6).toFixed(2)}deg`,
+                                );
+                              }}
+                              onPointerLeave={(event) => {
+                                event.currentTarget.style.setProperty(
+                                  "--tilt-x",
+                                  "0deg",
+                                );
+                                event.currentTarget.style.setProperty(
+                                  "--tilt-y",
+                                  "0deg",
+                                );
+                              }}
+                            >
+                              <span
+                                className="about-card__stage"
+                                aria-hidden="true"
+                              >
+                                {String(stageIndex + 1).padStart(2, "0")} / 03
+                              </span>
+                              <h3 className="about-card__title">{card.title}</h3>
+                              <span
+                                className="about-card__underline"
+                                aria-hidden="true"
+                              />
+                              {card.body ? (
+                                <p className="about-card__body">{card.body}</p>
+                              ) : null}
+                              {card.list ? (
+                                <ul className="about-card__list">
+                                  {card.list.map((item) => (
+                                    <li key={item}>{item}</li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
-
-        {/* Stage background wash */}
-        <div className="about-stage-glow pointer-events-none absolute inset-0" />
-
-        {/* Background portrait canvas (shader reveal) */}
-        {reducedMotion ? (
-          <div className="about-portrait-fallback" aria-hidden="true">
-            {PORTRAITS.map((source, index) => (
-              <img
-                key={source}
-                className="about-portrait-fallback__image"
-                src={source}
-                srcSet={PORTRAIT_SRCSETS[index]}
-                sizes={PORTRAIT_SIZES}
-                alt=""
-                loading={index === 0 ? "eager" : "lazy"}
-                decoding="async"
-                draggable={false}
-                style={{ opacity: activeStage === index ? 1 : 0 }}
-              />
-            ))}
-          </div>
-        ) : (
-          <AboutPortraitScene
-            sources={PORTRAIT_SOURCES}
-            mobileSources={PORTRAIT_MOBILE}
-            revealRef={revealRef}
-            active={sceneActive}
-          />
-        )}
 
         {/* Four progressive blur layers at the top and bottom edges */}
         <EdgeBlur edge="top" />
@@ -661,115 +727,13 @@ export default function AboutSection() {
         <div className="about-chrome absolute inset-x-0 top-0 z-40 flex items-center justify-between px-6 pt-20 md:px-10 md:pt-24">
           <div className="flex items-center gap-3">
             <span className="about-mark" aria-hidden="true" />
-            <ScrollFilterHeading className="about-label">About me</ScrollFilterHeading>
+            <ScrollFilterHeading className="about-label">
+              About me
+            </ScrollFilterHeading>
           </div>
           <span className="about-label about-label--right">
             {String(activeStage + 1).padStart(2, "0")} / 03
           </span>
-        </div>
-
-        {/* Floating cards */}
-        <div
-          ref={cardsLayerRef}
-          className="about-cards pointer-events-none absolute inset-0 z-30"
-        >
-          {STAGES.map((stage, stageIndex) => (
-            <div
-              key={stage.caption}
-              className="about-stage-cards absolute inset-0"
-              data-visible={activeStage === stageIndex}
-            >
-              {stage.cards.map((card, sideIndex) => {
-                const cardIndex = stageIndex * 2 + sideIndex;
-                const darkCards = stageIndex === 0;
-
-                return (
-                  <div
-                    key={card.title}
-                    className={`about-card-anchor about-card-anchor--${card.side}`}
-                  >
-                    <div
-                      ref={(element) => {
-                        cardRefs.current[cardIndex] = element;
-                      }}
-                      className="about-card-shell"
-                      style={{
-                        opacity: 0,
-                        transform: "translate3d(0, 0, -300px)",
-                      }}
-                    >
-                      <div
-                        ref={(element) => {
-                          motionRefs.current[cardIndex] = element;
-                        }}
-                        className="about-card-motion"
-                      >
-                        <div
-                          className="about-card-float"
-                          style={
-                            {
-                              "--bob-duration": `${5.4 + cardIndex * 0.31}s`,
-                              "--bob-delay": `${-0.7 - cardIndex * 0.73}s`,
-                            } as React.CSSProperties
-                          }
-                        >
-                          <div
-                            className={`about-card about-card--${darkCards ? "dark" : "light"} about-card-tilt`}
-                            onPointerMove={(event) => {
-                              if (event.pointerType !== "mouse") return;
-                              const rect =
-                                event.currentTarget.getBoundingClientRect();
-                              const x =
-                                (event.clientX - rect.left) / rect.width - 0.5;
-                              const y =
-                                (event.clientY - rect.top) / rect.height - 0.5;
-                              event.currentTarget.style.setProperty(
-                                "--tilt-y",
-                                `${(x * 6).toFixed(2)}deg`,
-                              );
-                              event.currentTarget.style.setProperty(
-                                "--tilt-x",
-                                `${(-y * 6).toFixed(2)}deg`,
-                              );
-                            }}
-                            onPointerLeave={(event) => {
-                              event.currentTarget.style.setProperty(
-                                "--tilt-x",
-                                "0deg",
-                              );
-                              event.currentTarget.style.setProperty(
-                                "--tilt-y",
-                                "0deg",
-                              );
-                            }}
-                          >
-                            <span className="about-card__stage" aria-hidden="true">
-                              {String(stageIndex + 1).padStart(2, "0")} / 03
-                            </span>
-                            <h3 className="about-card__title">{card.title}</h3>
-                            <span
-                              className="about-card__underline"
-                              aria-hidden="true"
-                            />
-                            {card.body ? (
-                              <p className="about-card__body">{card.body}</p>
-                            ) : null}
-                            {card.list ? (
-                              <ul className="about-card__list">
-                                {card.list.map((item) => (
-                                  <li key={item}>{item}</li>
-                                ))}
-                              </ul>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
         </div>
 
         {/* Stage caption */}
@@ -789,6 +753,29 @@ export default function AboutSection() {
                 style={{ transform: `scaleX(${(activeStage + 1) / 3})` }}
               />
             </div>
+          </div>
+        </div>
+
+        {/* Full-stage slice cover. Bands are created once and reused. */}
+        <div
+          ref={overlayRef}
+          className="about-slice-overlay"
+          data-visible="false"
+          aria-hidden="true"
+        >
+          <div
+            ref={bandsLayerRef}
+            className="about-slice-overlay__bands about-slice-overlay__bands--horizontal"
+          >
+            {Array.from({ length: MAX_SLICE_BANDS }, (_, index) => (
+              <span
+                key={index}
+                ref={(element) => {
+                  bandRefs.current[index] = element;
+                }}
+                className="about-slice-band"
+              />
+            ))}
           </div>
         </div>
       </div>
