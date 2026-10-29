@@ -21,8 +21,6 @@ export interface LensDistortionProps {
   insideSrc: string;
   /** Outside texture (grayscale image) */
   outsideSrc: string;
-  /** Alt text for accessibility */
-  alt?: string;
   /** Square half-side in -1..1 units. Default 0.4. */
   squareSize?: number;
   /** Lens distortion amount. Default 1.5. */
@@ -181,7 +179,6 @@ const fragmentShader = `
 export function LensDistortion({
   insideSrc,
   outsideSrc,
-  alt = "Pricing background with lens distortion effect",
   squareSize = 0.4,
   lensDistortion = 1.5,
   rgbShiftR = 0.01,
@@ -205,6 +202,10 @@ export function LensDistortion({
     mesh: null as THREE.Mesh | null,
     mouse: new THREE.Vector2(0, 0),
     mouseEase: new THREE.Vector2(0, 0),
+    pendingMouse: new THREE.Vector2(0, 0),
+    hasPointer: false,
+    visible: false,
+    reduceMotion: false,
     observer: null as IntersectionObserver | null,
     animId: 0,
   });
@@ -214,10 +215,28 @@ export function LensDistortion({
     if (!canvas) return;
 
     const state = stateRef.current;
-    let cancelled = false;
+    const reducedMotionQuery = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
 
-    const W = Math.max(1, window.innerWidth);
-    const H = Math.max(1, window.innerHeight);
+    state.reduceMotion = reducedMotionQuery.matches;
+
+    let cancelled = false;
+    let texturesReady = false;
+    let readyTextures = 0;
+    let requiredTextures = 2;
+
+    const getSize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const fallbackWidth = window.innerWidth || 1;
+      const fallbackHeight = window.innerHeight || 1;
+
+      return {
+        width: Math.max(1, Math.round(rect.width || fallbackWidth)),
+        height: Math.max(1, Math.round(rect.height || fallbackHeight)),
+      };
+    };
 
     // Camera
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -229,6 +248,7 @@ export function LensDistortion({
 
     // Renderer
     let renderer: THREE.WebGLRenderer | null = null;
+    const initialSize = getSize();
     try {
       renderer = new THREE.WebGLRenderer({
         canvas,
@@ -237,19 +257,20 @@ export function LensDistortion({
         powerPreference: "high-performance",
       });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.setSize(W, H);
+      renderer.setSize(initialSize.width, initialSize.height, false);
       try {
         renderer.outputColorSpace = THREE.SRGBColorSpace;
       } catch {}
       state.renderer = renderer;
-    } catch (e) {
+    } catch {
       return;
     }
 
-    // Textures
-    // TextureLoader resolves its image asynchronously, so texture.image is null
-    // during the first render pass. Keep safe 1x1 placeholders and update them
-    // once each image has actually loaded.
+    // Textures. When the same source is used for both sides we only decode it
+    // once, which keeps the pinned section light.
+    const sharedTexture = insideSrc === outsideSrc;
+    requiredTextures = sharedTexture ? 1 : 2;
+
     const insideSize = new THREE.Vector2(1, 1);
     const outsideSize = new THREE.Vector2(1, 1);
 
@@ -266,20 +287,49 @@ export function LensDistortion({
     };
 
     const loader = new THREE.TextureLoader();
-    const insideTexture = loader.load(insideSrc, (texture) => {
-      if (!cancelled) syncTextureSize(texture, insideSize);
-    });
-    const outsideTexture = loader.load(outsideSrc, (texture) => {
-      if (!cancelled) syncTextureSize(texture, outsideSize);
-    });
+
+    const markTextureReady = () => {
+      if (cancelled) return;
+      readyTextures += 1;
+      if (readyTextures < requiredTextures) return;
+
+      texturesReady = true;
+      if (state.visible) startLoop();
+    };
+
+    const insideTexture = loader.load(
+      insideSrc,
+      (texture) => {
+        if (cancelled) return;
+        syncTextureSize(texture, insideSize);
+        if (sharedTexture) syncTextureSize(texture, outsideSize);
+        markTextureReady();
+      },
+      undefined,
+      () => undefined,
+    );
+
+    const outsideTexture = sharedTexture
+      ? insideTexture
+      : loader.load(
+          outsideSrc,
+          (texture) => {
+            if (cancelled) return;
+            syncTextureSize(texture, outsideSize);
+            markTextureReady();
+          },
+          undefined,
+          () => undefined,
+        );
+
     insideTexture.colorSpace = THREE.SRGBColorSpace;
     outsideTexture.colorSpace = THREE.SRGBColorSpace;
 
     // Uniforms
-    const uniforms: Record<string, THREE.Uniform> = {
+    const uniforms: Record<string, THREE.IUniform> = {
       u_texture1: { value: insideTexture },
       u_texture2: { value: outsideTexture },
-      u_meshSize: { value: new THREE.Vector2(W, H) },
+      u_meshSize: { value: new THREE.Vector2(initialSize.width, initialSize.height) },
       u_textureSize1: { value: insideSize },
       u_textureSize2: { value: outsideSize },
       u_mouse: { value: new THREE.Vector2(0, 0) },
@@ -309,63 +359,98 @@ export function LensDistortion({
     scene.add(mesh);
     state.mesh = mesh;
 
-    // Pointer handler
-    const onPointerMove = (e: PointerEvent) => {
-      if (!W || !H) return;
-      state.mouse.set((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1);
+    // Pointer input only stores the latest position. The render loop applies it
+    // once per animation frame, so pointer events cannot outrun the GPU.
+    const onPointerMove = (event: PointerEvent) => {
+      if (!state.running || state.reduceMotion) return;
+
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      state.pendingMouse.set(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      state.hasPointer = true;
     };
     window.addEventListener("pointermove", onPointerMove, { passive: true });
 
-    // Resize handler
-    const onResize = () => {
-      if (!renderer || !uniforms.u_meshSize) return;
-      const newW = window.innerWidth;
-      const newH = window.innerHeight;
-      if (!renderer) return;
-      try {
-        renderer.setSize(newW, newH);
-      } catch {}
-      uniforms.u_meshSize.value.set(newW, newH);
-    };
-    window.addEventListener("resize", onResize);
+    const resize = () => {
+      if (!renderer || cancelled) return;
 
-    // Render loop
+      const { width, height } = getSize();
+      try {
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(width, height, false);
+      } catch {
+        return;
+      }
+      uniforms.u_meshSize.value.set(width, height);
+
+      // Reduced-motion mode renders one static frame; resize that frame too.
+      if (state.reduceMotion && state.visible) startLoop();
+    };
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
+    window.addEventListener("resize", resize);
+
+    const onReducedMotionChange = () => {
+      state.reduceMotion = reducedMotionQuery.matches;
+      if (state.reduceMotion) {
+        stopLoop();
+        if (state.visible) startLoop();
+      } else if (state.visible) {
+        startLoop();
+      }
+    };
+    reducedMotionQuery.addEventListener("change", onReducedMotionChange);
+
     const tick = () => {
       if (cancelled || !state.running) return;
       if (!renderer || !scene || !camera) return;
 
-      const time = performance.now() * 0.001;
+      const time = state.reduceMotion ? 0 : performance.now() * 0.001;
 
-      // On mobile (no pointer), drive along a slow path
-      try {
-        const isTouch = window.matchMedia("(pointer: coarse)").matches;
-        if (isTouch) {
+      if (state.reduceMotion) {
+        state.mouse.set(0, 0);
+        state.mouseEase.set(0, 0);
+      } else {
+        if (coarsePointerQuery.matches && !state.hasPointer) {
           state.mouse.set(
             0.35 * Math.sin(time * 0.3),
             0.25 * Math.cos(time * 0.4),
           );
+        } else if (state.hasPointer) {
+          state.mouse.copy(state.pendingMouse);
         }
-      } catch {}
 
-      // Ease mouse
-      state.mouseEase.lerp(state.mouse, pointerEase);
+        state.mouseEase.lerp(state.mouse, pointerEase);
+      }
+
       uniforms.u_mouse.value.copy(state.mouseEase);
       uniforms.u_time.value = time;
 
       try {
         renderer.render(scene, camera);
       } catch {
+        state.running = false;
+        state.animId = 0;
         return;
       }
-      if (!cancelled && state.running) {
+
+      if (!cancelled && state.running && !state.reduceMotion) {
         state.animId = requestAnimationFrame(tick);
+      } else {
+        state.running = false;
+        state.animId = 0;
       }
     };
 
     const startLoop = () => {
-      if (cancelled || state.running) return;
+      if (cancelled || state.running || !texturesReady || !state.visible) return;
       state.running = true;
-      tick();
+      state.animId = requestAnimationFrame(tick);
     };
 
     const stopLoop = () => {
@@ -374,10 +459,12 @@ export function LensDistortion({
       state.animId = 0;
     };
 
-    // IntersectionObserver to pause when off-screen
+    // Pause the whole loop while the section is off-screen.
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries.some((e) => e.isIntersecting);
+        const visible = entries.some((entry) => entry.isIntersecting);
+        state.visible = visible;
+
         if (visible) startLoop();
         else stopLoop();
       },
@@ -386,25 +473,28 @@ export function LensDistortion({
     observer.observe(canvas);
     state.observer = observer;
 
-    // Start
-    startLoop();
+    resize();
 
     return () => {
       cancelled = true;
       stopLoop();
       window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", resize);
+      reducedMotionQuery.removeEventListener("change", onReducedMotionChange);
+      resizeObserver.disconnect();
       observer.disconnect();
       geometry.dispose();
       material.dispose();
       insideTexture.dispose();
-      outsideTexture.dispose();
+      if (outsideTexture !== insideTexture) outsideTexture.dispose();
       renderer.dispose();
       state.renderer = null;
       state.scene = null;
       state.camera = null;
       state.mesh = null;
       state.observer = null;
+      state.visible = false;
+      state.hasPointer = false;
     };
   }, [
     insideSrc,
@@ -428,14 +518,6 @@ export function LensDistortion({
     <canvas
       ref={canvasRef}
       className="lens-bg"
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: 0,
-        display: "block",
-      }}
       aria-hidden="true"
     />
   );
