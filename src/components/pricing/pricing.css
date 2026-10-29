@@ -69,6 +69,13 @@
   }
 }
 
+@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .price__pin--motion .price {
+    position: sticky;
+    top: 0;
+  }
+}
+
 /* ---------- background lens ---------- */
 
 .price__lens {
@@ -371,6 +378,12 @@
   }
 }
 
+@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .price--motion .price__card-shell {
+    opacity: 0;
+  }
+}
+
 /* ---------- mobile: vertical stack, no pin ---------- */
 
 @media (max-width: 900px) {
@@ -412,6 +425,37 @@
 
   .pricing-card__feature-label {
     font-size: var(--price-text-sm);
+  }
+
+  /* When motion is enabled, keep the horizontal track + pin on mobile too. */
+  .price--motion {
+    height: 100vh;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  .price--motion .price__track {
+    display: flex;
+    width: max-content;
+    height: 100%;
+  }
+
+  .price--motion .price__heading {
+    flex: 0 0 100vw;
+    width: 100vw;
+    min-height: 0;
+    padding-inline: 5vw;
+  }
+
+  .price--motion .price__cards {
+    flex-direction: row;
+    align-items: stretch;
+    width: auto;
+    padding: 0 12vw 0 0;
+  }
+
+  .price--motion .price__card {
+    width: min(86vw, 420px);
   }
 }
 
