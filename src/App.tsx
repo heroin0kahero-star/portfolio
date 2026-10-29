@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { lazy, Suspense, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { ProgressiveBlurEdges } from "./components/ProgressiveBlurEdges";
 import { HeroSection } from "./components/sections/HeroSection";
 import { CapabilitiesSection } from "./components/sections/CapabilitiesSection";
@@ -12,12 +12,14 @@ import PricingSection from "./components/PricingSection";
 import ContactSection from "./components/ContactSection";
 import { MotionFooter } from "./components/MotionFooter";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { LayerFallback } from "./components/LayerFallback";
 import { PortalStage, SectionPortals } from "./components/SectionPortal";
+import AboutSection from "./components/AboutSection";
+import LiveBuildsSection from "./components/LiveBuildsSection";
 
-const AboutSection = lazy(() => import("./components/AboutSection"));
-const LiveBuildsSection = lazy(() => import("./components/LiveBuildsSection"));
-
+// About and Live Builds are part of the first paint. They own scroll-pinned
+// timelines whose measurements feed every later trigger, so mounting them on
+// demand (React.lazy) made the page grow after load, shifted every section
+// below them, and left first-time visitors looking at empty placeholders.
 function SectionBoundary({
   label,
   children,
@@ -25,11 +27,7 @@ function SectionBoundary({
   label: string;
   children: ReactNode;
 }) {
-  return (
-    <ErrorBoundary label={label}>
-      <Suspense fallback={<LayerFallback label={label} />}>{children}</Suspense>
-    </ErrorBoundary>
-  );
+  return <ErrorBoundary label={label}>{children}</ErrorBoundary>;
 }
 
 export default function App() {
