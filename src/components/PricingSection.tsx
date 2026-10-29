@@ -172,10 +172,11 @@ export default function PricingSection() {
     const matchMedia = gsap.matchMedia();
 
     /* ---------------------------------------------------------------- */
-    /* Desktop: pinned horizontal track with a scroll-driven card entry  */
+    /* All viewports: pinned horizontal track with scroll-driven card    */
+    /* entry. Mobile keeps its own card sizing (see pricing.css).         */
     /* ---------------------------------------------------------------- */
 
-    matchMedia.add(`${DESKTOP_QUERY} and ${MOTION_QUERY}`, () => {
+    matchMedia.add(MOTION_QUERY, () => {
       const cardEls = Array.from(
         cardsRoot.querySelectorAll<HTMLElement>(".price__card"),
       );
@@ -344,48 +345,6 @@ export default function PricingSection() {
         motions.forEach(resetMotion);
         context.revert();
       };
-    });
-
-    /* ---------------------------------------------------------------- */
-    /* Mobile: no pin. Cards stack vertically and enter once on scroll.  */
-    /* ---------------------------------------------------------------- */
-
-    matchMedia.add(`${MOBILE_QUERY} and ${MOTION_QUERY}`, () => {
-      const motions = Array.from(
-        cardsRoot.querySelectorAll<HTMLElement>(".price__card-motion"),
-      );
-
-      const context = gsap.context(() => {
-        gsap.fromTo(
-          motions,
-          {
-            opacity: 0,
-            y: 40,
-            z: -160,
-            rotationY: -8,
-            scale: 0.96,
-          },
-          {
-            opacity: 1,
-            y: 0,
-            z: 0,
-            rotationY: 0,
-            scale: 1,
-            duration: 0.72,
-            ease: "power3.out",
-            stagger: 0.06,
-            clearProps: "opacity,transform",
-            scrollTrigger: {
-              trigger: cardsRoot,
-              start: "top 88%",
-              once: true,
-              invalidateOnRefresh: true,
-            },
-          },
-        );
-      }, section);
-
-      return () => context.revert();
     });
 
     return () => matchMedia.revert();
