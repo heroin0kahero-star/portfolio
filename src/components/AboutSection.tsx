@@ -494,7 +494,7 @@ export default function AboutSection() {
 
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section || !imagesReady) return;
+    if (!section) return;
 
     const trigger = ScrollTrigger.create({
       trigger: section,
@@ -528,7 +528,15 @@ export default function AboutSection() {
       trigger.kill();
       document.documentElement.classList.remove("about-has-edge-blur");
     };
-  }, [applyProgress, imagesReady]);
+  }, [applyProgress]);
+
+  // The trigger is live from the first paint. Portraits and webfonts arriving
+  // later can change the pinned range, so re-measure once they have settled
+  // instead of holding the whole animation back until then.
+  useEffect(() => {
+    if (!imagesReady) return;
+    ScrollTrigger.refresh();
+  }, [imagesReady]);
 
   /* ---------------------------------------------------------------------- */
   /* Desktop / resize changes                                                */
