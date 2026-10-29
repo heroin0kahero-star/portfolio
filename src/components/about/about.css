@@ -492,19 +492,59 @@
     display: none;
   }
 
+  /* Each stage paints the exact colour at its portrait's edge, so the photo
+     never reads as a rectangle sitting on a different background.
+     Stage 01 = sampled white, 02 = sampled red edge (#640002), 03 = pure black. */
+  .about-stage:nth-child(1) {
+    background-color: #ffffff !important;
+  }
+
+  .about-stage:nth-child(2) {
+    background-color: #640002 !important;
+  }
+
+  .about-stage:nth-child(3) {
+    background-color: #000000 !important;
+  }
+
   .about-stage__portrait {
     position: relative;
     inset: auto;
-    z-index: 1;
+    z-index: 0;
     flex: 0 0 auto;
     width: min(80vw, 460px);
-    aspect-ratio: 16 / 9;
+    /* The source is 16:9 with the figure inside its 4:5 centre. This box and
+       `cover` below trim the empty side margins so the figure fills 80vw. */
+    aspect-ratio: 5 / 4;
     height: auto;
     margin: auto;
+    overflow: hidden;
     background: transparent;
     border: 0;
     outline: 0;
     box-shadow: none;
+    /* Soft top/bottom edges: the bottom fades the sweater into the stage
+       colour instead of ending on a hard photo rectangle. */
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 2%,
+      #000 88%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 2%,
+      #000 88%,
+      transparent 100%
+    );
+  }
+
+  /* The 3D bust sits a little narrower inside its source frame, so crop it
+     slightly tighter to give it the same visual width as the other two. */
+  .about-stage:nth-child(3) .about-stage__portrait {
+    aspect-ratio: 7 / 6;
   }
 
   .about-portrait-image {
@@ -518,6 +558,7 @@
      portrait, but their edges stop before the eyes-to-chin band. */
   .about-stage__cards {
     display: block;
+    z-index: 3;
     padding: 0;
     perspective: none;
     transform-style: flat;
